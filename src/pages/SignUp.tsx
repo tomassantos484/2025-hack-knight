@@ -25,18 +25,10 @@ const SignUp = () => {
     if (isSignedIn) {
       toast.success('Account created successfully');
       
-      // Add a small delay to ensure the toast is shown
-      setTimeout(() => {
-        // Store a flag to indicate we're coming from sign-up
-        sessionStorage.setItem('justAuthenticated', 'true');
-        
-        // Use window.location for a full page reload to ensure Clerk state is synchronized
-        window.location.href = redirectUrl.startsWith('/') 
-          ? redirectUrl 
-          : `/${redirectUrl}`;
-      }, 300);
+      // Use React Router navigation instead of window.location
+      navigate(redirectUrl);
     }
-  }, [isSignedIn, redirectUrl]);
+  }, [isSignedIn, navigate, redirectUrl]);
   
   // Handle navigation to sign in page
   const handleSignInClick = (e: React.MouseEvent<HTMLAnchorElement>) => {

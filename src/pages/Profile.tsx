@@ -2,19 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut } from 'lucide-react';
+import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut, Leaf } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const Profile = () => {
   const { signOut, isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { user, isLoaded: userIsLoaded } = useUser();
   const navigate = useNavigate();
   
   // Debug log for authentication state
   useEffect(() => {
-    console.log('Auth state in Profile:', { isSignedIn, user: user?.username || user?.firstName });
+    console.log('Auth state in Profile:', { 
+      isSignedIn, 
+      user: user?.username || user?.firstName,
+      userData: user
+    });
   }, [isSignedIn, user]);
   
   // Redirect if not signed in
@@ -24,90 +29,130 @@ const Profile = () => {
     }
   }, [isSignedIn, navigate]);
   
-  const [userInfo] = useState({
-    name: 'alex chen',
-    username: 'eco_alex',
-    joinDate: 'member since june 2023',
-    stats: {
-      streak: 7,
-      actions: 42,
-      co2Saved: 52.3,
-      wasteRecycled: 78
+  // Format the user's creation date for display
+  const formatJoinDate = () => {
+    if (!user?.createdAt) return 'new member';
+    
+    try {
+      const createdAt = new Date(user.createdAt);
+      return `member since ${format(createdAt, 'MMMM yyyy')}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'member';
     }
-  });
+  };
   
-  const badges = [
-    {
-      id: 1,
-      name: 'Early Adopter',
-      description: 'Joined during the beta phase',
-      icon: '🌱',
-      earned: true,
-      date: 'Jun 2023'
-    },
-    {
-      id: 2,
-      name: 'Waste Warrior',
-      description: 'Recycled 50+ items correctly',
-      icon: '♻️',
-      earned: true,
-      date: 'Aug 2023'
-    },
-    {
-      id: 3,
-      name: 'Eco Streak',
-      description: 'Maintained a 7-day action streak',
-      icon: '🔥',
-      earned: true,
-      date: 'Sep 2023'
-    },
-    {
-      id: 4,
-      name: 'Transit Champion',
-      description: 'Used public transit 10+ times',
-      icon: '🚊',
-      earned: false
-    },
-    {
-      id: 5,
-      name: 'Plant Power',
-      description: 'Logged 15 meatless meals',
-      icon: '🥗',
-      earned: false
-    },
-    {
-      id: 6,
-      name: 'Energy Saver',
-      description: 'Reduced energy usage for 30 days',
-      icon: '⚡',
-      earned: false
+  // Format the user's creation date for badge
+  const formatBadgeDate = () => {
+    if (!user?.createdAt) return 'Recently';
+    
+    try {
+      const createdAt = new Date(user.createdAt);
+      return format(createdAt, 'MMM yyyy');
+    } catch (error) {
+      console.error('Error formatting badge date:', error);
+      return 'Recently';
     }
-  ];
+  };
   
-  const recentChallenges = [
-    {
-      id: 1,
-      title: 'Plastic-Free Week',
-      completed: true,
-      date: 'Sep 15, 2023',
-      impact: '25 pieces diverted'
-    },
-    {
-      id: 2,
-      title: 'Bike to Work Challenge',
-      completed: true,
-      date: 'Aug 22, 2023',
-      impact: '12.4 kg CO₂ saved'
-    },
-    {
-      id: 3,
-      title: 'Meatless Mondays',
-      completed: false,
-      inProgress: true,
-      date: 'Current',
-      impact: 'In progress'
+  // Get user's display name
+  const getDisplayName = () => {
+    if (!userIsLoaded || !user) return 'EcoVision User';
+    
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    } else if (user.firstName) {
+      return user.firstName;
+    } else if (user.username) {
+      return user.username;
+    } else {
+      return 'EcoVision User';
     }
-  ];
+  };
+  
+  // Get username or email as identifier
+  const getUserIdentifier = () => {
+    if (!userIsLoaded || !user) return 'user';
+    
+    return user.username || user.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user';
+  };
+  
+  // Generate user stats based on user data
+  const getUserStats = () => {
+    // For new users, show starter stats
+    return {
+      streak: 0,
+      actions: 0,
+      co2Saved: 0,
+      wasteRecycled: 0
+    };
+  };
+  
+  // Get user stats
+  const userStats = getUserStats();
+  
+  // Generate badges based on user data
+  const getBadges = () => {
+    return [
+      {
+        id: 1,
+        name: 'Early Adopter',
+        description: 'Joined during the beta phase',
+        icon: '🌱',
+        earned: true, // Only badge earned by default for new users
+        date: formatBadgeDate()
+      },
+      {
+        id: 2,
+        name: 'Waste Warrior',
+        description: 'Recycled 50+ items correctly',
+        icon: '♻️',
+        earned: false, // Locked for new users
+        date: null
+      },
+      {
+        id: 3,
+        name: 'Eco Streak',
+        description: 'Maintained a 7-day action streak',
+        icon: '🔥',
+        earned: false, // Locked for new users
+        date: null
+      },
+      {
+        id: 4,
+        name: 'Transit Champion',
+        description: 'Used public transit 10+ times',
+        icon: '🚊',
+        earned: false
+      },
+      {
+        id: 5,
+        name: 'Plant Power',
+        description: 'Logged 15 meatless meals',
+        icon: '🥗',
+        earned: false
+      },
+      {
+        id: 6,
+        name: 'Energy Saver',
+        description: 'Reduced energy usage for 30 days',
+        icon: '⚡',
+        earned: false
+      }
+    ];
+  };
+  
+  // Get badges with user-specific data
+  const badges = getBadges();
+  
+  // Generate challenges based on user data
+  const getChallenges = () => {
+    // For new users, show no challenges yet
+    return [];
+  };
+  
+  // Get challenges with user-specific data
+  const recentChallenges = getChallenges();
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -123,6 +168,18 @@ const Profile = () => {
     }
   };
 
+  // Show loading state while user data is loading
+  if (!userIsLoaded) {
+    return (
+      <Layout>
+        <div className="max-w-5xl mx-auto flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-12 h-12 border-4 border-eco-green border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-eco-dark">Loading your profile...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="max-w-5xl mx-auto">
@@ -132,9 +189,17 @@ const Profile = () => {
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-24 h-24 rounded-full bg-eco-cream flex items-center justify-center border-4 border-white eco-shadow"
+              className="w-24 h-24 rounded-full bg-eco-cream flex items-center justify-center border-4 border-white eco-shadow overflow-hidden"
             >
-              <User size={40} className="text-eco-dark/70" />
+              {user?.imageUrl ? (
+                <img 
+                  src={user.imageUrl} 
+                  alt={getDisplayName()} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={40} className="text-eco-dark/70" />
+              )}
             </motion.div>
             
             <div>
@@ -143,7 +208,7 @@ const Profile = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="text-2xl md:text-3xl font-medium"
               >
-                {userInfo.name}
+                {getDisplayName()}
               </motion.h1>
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
@@ -151,9 +216,9 @@ const Profile = () => {
                 transition={{ delay: 0.1 }}
                 className="text-eco-dark/70 flex items-center gap-2"
               >
-                @{userInfo.username}
+                @{getUserIdentifier()}
                 <span className="inline-block w-1 h-1 rounded-full bg-eco-dark/40"></span>
-                {userInfo.joinDate}
+                {formatJoinDate()}
               </motion.div>
               
               <motion.div 
@@ -163,17 +228,17 @@ const Profile = () => {
                 className="flex flex-wrap gap-4 mt-2"
               >
                 <div className="text-sm">
-                  <span className="font-medium">{userInfo.stats.actions}</span>
+                  <span className="font-medium">{userStats.actions}</span>
                   <span className="text-eco-dark/70 ml-1">actions</span>
                 </div>
                 
                 <div className="text-sm">
-                  <span className="font-medium">{userInfo.stats.co2Saved} kg</span>
+                  <span className="font-medium">{userStats.co2Saved} kg</span>
                   <span className="text-eco-dark/70 ml-1">CO₂ saved</span>
                 </div>
                 
                 <div className="text-sm">
-                  <span className="font-medium">{userInfo.stats.streak} days</span>
+                  <span className="font-medium">{userStats.streak} days</span>
                   <span className="text-eco-dark/70 ml-1">streak</span>
                 </div>
               </motion.div>
@@ -244,66 +309,89 @@ const Profile = () => {
               ))}
             </div>
             
-            <div className="mt-6 text-center">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="inline-flex items-center gap-1.5 text-sm text-eco-green hover:text-eco-green/80"
-              >
-                View all badges
-                <ChevronRight size={16} />
-              </motion.button>
+            <div className="mt-8 bg-eco-green/5 border border-eco-green/20 rounded-xl p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                  <h3 className="font-medium mb-1">How to earn more badges?</h3>
+                  <p className="text-sm text-eco-dark/70">Complete eco actions and challenges to unlock more badges and track your environmental impact.</p>
+                </div>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 bg-eco-green text-white text-sm rounded-lg hover:bg-eco-green/90 transition-colors whitespace-nowrap"
+                  onClick={() => navigate('/actions')}
+                >
+                  Start an Action
+                </motion.button>
+              </div>
             </div>
           </TabsContent>
           
           <TabsContent value="challenges" className="mt-0">
-            <div className="space-y-4">
-              {recentChallenges.map((challenge) => (
-                <motion.div
-                  key={challenge.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: challenge.id * 0.1 }}
-                  className="bg-white border border-eco-lightGray/50 rounded-xl overflow-hidden eco-shadow"
-                >
-                  <div className="px-5 py-4 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">{challenge.title}</h3>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Calendar size={14} className="text-eco-dark/60" />
-                        <span className="text-xs text-eco-dark/60">{challenge.date}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="mb-1">
-                        {challenge.completed && (
-                          <span className="text-xs px-2 py-0.5 bg-eco-green/10 text-eco-green rounded-full">
-                            Completed
-                          </span>
-                        )}
-                        
-                        {challenge.inProgress && (
-                          <span className="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full">
-                            In Progress
-                          </span>
-                        )}
-                        
-                        {!challenge.completed && !challenge.inProgress && (
-                          <span className="text-xs px-2 py-0.5 bg-eco-dark/10 text-eco-dark/50 rounded-full">
-                            Abandoned
-                          </span>
-                        )}
+            {recentChallenges.length > 0 ? (
+              <div className="space-y-4">
+                {recentChallenges.map((challenge) => (
+                  <motion.div
+                    key={challenge.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: challenge.id * 0.1 }}
+                    className="bg-white border border-eco-lightGray/50 rounded-xl overflow-hidden eco-shadow"
+                  >
+                    <div className="px-5 py-4 flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium">{challenge.title}</h3>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Calendar size={14} className="text-eco-dark/60" />
+                          <span className="text-xs text-eco-dark/60">{challenge.date}</span>
+                        </div>
                       </div>
                       
-                      <div className="text-xs text-eco-dark/70">
-                        {challenge.impact}
+                      <div className="text-right">
+                        <div className="mb-1">
+                          {challenge.completed && (
+                            <span className="text-xs px-2 py-0.5 bg-eco-green/10 text-eco-green rounded-full">
+                              Completed
+                            </span>
+                          )}
+                          
+                          {challenge.inProgress && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full">
+                              In Progress
+                            </span>
+                          )}
+                          
+                          {!challenge.completed && !challenge.inProgress && (
+                            <span className="text-xs px-2 py-0.5 bg-eco-dark/10 text-eco-dark/50 rounded-full">
+                              Abandoned
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="text-xs text-eco-dark/70">
+                          {challenge.impact}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4"
+                >
+                  <Leaf size={48} className="mx-auto text-eco-green/50" />
                 </motion.div>
-              ))}
-            </div>
+                <h3 className="text-xl font-medium mb-2">Welcome to EcoVision!</h3>
+                <p className="text-eco-dark/70 max-w-md mx-auto">
+                  Start your eco journey by taking on your first challenge. Complete challenges to earn badges and track your environmental impact.
+                </p>
+              </div>
+            )}
             
             <div className="mt-8 bg-eco-green/5 border border-eco-green/20 rounded-xl p-5">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -316,6 +404,7 @@ const Profile = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="px-4 py-2 bg-eco-green text-white text-sm rounded-lg hover:bg-eco-green/90 transition-colors whitespace-nowrap"
+                  onClick={() => navigate('/actions')}
                 >
                   Browse Challenges
                 </motion.button>

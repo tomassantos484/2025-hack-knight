@@ -122,30 +122,6 @@ const AnimatedRoutes = () => {
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Force a refresh if coming from a sign-in or sign-up page
-  useEffect(() => {
-    const lastPath = sessionStorage.getItem('lastPath');
-    const currentPath = window.location.pathname;
-    const justSignedOut = sessionStorage.getItem('justSignedOut');
-    
-    // If we just signed out, clear the flag
-    if (justSignedOut === 'true') {
-      console.log('Just signed out, clearing flag');
-      sessionStorage.removeItem('justSignedOut');
-    }
-    
-    // If we're navigating away from auth pages, force a refresh to ensure auth state is correct
-    if (lastPath && (lastPath.includes('/sign-in') || lastPath.includes('/sign-up')) && 
-        !currentPath.includes('/sign-in') && !currentPath.includes('/sign-up')) {
-      console.log('Detected navigation from auth page, refreshing to ensure auth state');
-      sessionStorage.removeItem('lastPath');
-      window.location.reload();
-    }
-    
-    // Store current path for next navigation
-    sessionStorage.setItem('lastPath', currentPath);
-  }, []);
-
   if (!clerkPubKey) {
     return <div className="flex items-center justify-center min-h-screen">
       Missing Clerk Publishable Key. Please add it to your .env file.

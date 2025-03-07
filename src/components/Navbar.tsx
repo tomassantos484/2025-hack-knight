@@ -13,34 +13,12 @@ const Navbar = () => {
   const { isSignedIn, signOut } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
   
-  // Enhanced authentication check - consider multiple factors
-  const isAuthenticated = Boolean(
-    (isSignedIn === true) || 
-    (userIsLoaded && user !== null) ||
-    // Check for Clerk session token in localStorage as a fallback
-    (typeof window !== 'undefined' && window.localStorage.getItem('clerk-db-jwt') !== null)
-  );
+  // Determine if we're on a protected route
+  const isProtectedRoute = ['/actions', '/trash-scanner', '/profile'].includes(location.pathname);
   
-  // Force authentication check on mount and when location changes
-  useEffect(() => {
-    // Check if we just authenticated and need to refresh
-    const justAuthenticated = sessionStorage.getItem('justAuthenticated');
-    if (justAuthenticated === 'true') {
-      console.log('Just authenticated, forcing refresh of auth state');
-      sessionStorage.removeItem('justAuthenticated');
-      // Force a refresh after a short delay to ensure Clerk has time to update
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    }
-    
-    // This will trigger a re-render when the component mounts or when the URL changes
-    const checkAuth = async () => {
-      console.log('Checking auth state in Navbar on mount/location change');
-    };
-    
-    checkAuth();
-  }, [location.pathname]);
+  // If we're on a protected route, we must be authenticated
+  // Otherwise, use Clerk's authentication state
+  const isAuthenticated = isProtectedRoute || isSignedIn;
   
   // Debug log for authentication state
   useEffect(() => {
@@ -48,12 +26,11 @@ const Navbar = () => {
       isSignedIn, 
       userIsLoaded,
       hasUserData: user !== null,
+      isProtectedRoute,
       isAuthenticated,
-      hasClerkToken: typeof window !== 'undefined' && window.localStorage.getItem('clerk-db-jwt') !== null,
-      userData: user ? `${user.firstName} ${user.lastName}` : 'No user data',
       currentPath: location.pathname
     });
-  }, [isSignedIn, user, userIsLoaded, isAuthenticated, location.pathname]);
+  }, [isSignedIn, user, userIsLoaded, isAuthenticated, isProtectedRoute, location.pathname]);
   
   // Track scroll position to add background to navbar
   useEffect(() => {
@@ -79,8 +56,6 @@ const Navbar = () => {
       await signOut();
       // Show success toast
       toast.success('Signed out successfully');
-      // Set flag to indicate we just signed out
-      sessionStorage.setItem('justSignedOut', 'true');
       // Force a full page reload to reset all state
       window.location.href = '/';
     } catch (error) {
@@ -161,7 +136,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <div className="text-sm text-eco-dark/80">
-                  {user?.firstName || user?.username || 'User'}
+                  {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -169,7 +144,7 @@ const Navbar = () => {
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
                   onClick={() => navigate('/profile')}
                 >
-                  {user?.imageUrl ? (
+                  {userIsLoaded && user?.imageUrl ? (
                     <img 
                       src={user.imageUrl} 
                       alt="Profile" 
