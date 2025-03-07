@@ -1,11 +1,29 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar } from 'lucide-react';
+import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut } from 'lucide-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Profile = () => {
+  const { signOut, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const navigate = useNavigate();
+  
+  // Debug log for authentication state
+  useEffect(() => {
+    console.log('Auth state in Profile:', { isSignedIn, user: user?.username || user?.firstName });
+  }, [isSignedIn, user]);
+  
+  // Redirect if not signed in
+  useEffect(() => {
+    if (isSignedIn === false) {
+      navigate('/sign-in');
+    }
+  }, [isSignedIn, navigate]);
+  
   const [userInfo] = useState({
     name: 'alex chen',
     username: 'eco_alex',
@@ -90,6 +108,19 @@ const Profile = () => {
       impact: 'In progress'
     }
   ];
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+      // Force a full page reload to reset all state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
+  };
 
   return (
     <Layout>
@@ -384,8 +415,10 @@ const Profile = () => {
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="text-sm text-eco-accent hover:text-eco-accent/80"
+                className="px-4 py-2 rounded-md bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-2 mx-auto"
+                onClick={handleSignOut}
               >
+                <LogOut size={16} />
                 Sign Out
               </motion.button>
             </div>

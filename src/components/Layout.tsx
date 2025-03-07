@@ -121,10 +121,10 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-800">connect</h4>
               <div className="flex space-x-4">
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
+                <a href="https://github.com/tomassantos484/2025-hack-knight" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
                   <Github size={20} />
                 </a>
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
+                <a href="https://twitter.com/TomasJSantosY" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
                   <Twitter size={20} />
                 </a>
               </div>
