@@ -1,0 +1,131 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 60 10% 98%;
+    --foreground: 144 5% 22%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 144 5% 22%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 144 5% 22%;
+
+    --primary: 150 100% 20%;
+    --primary-foreground: 60 10% 98%;
+
+    --secondary: 144 5% 22%;
+    --secondary-foreground: 60 10% 98%;
+
+    --muted: 60 10% 94%;
+    --muted-foreground: 144 5% 40%;
+
+    --accent: 0 65% 35%;
+    --accent-foreground: 60 10% 98%;
+
+    --destructive: 0 65% 35%;
+    --destructive-foreground: 60 10% 98%;
+
+    --border: 144 5% 85%;
+    --input: 144 5% 85%;
+    --ring: 150 100% 20%;
+
+    --radius: 0.75rem;
+  }
+
+  @font-face {
+    font-family: 'GeneralSans';
+    src: url('/fonts/GeneralSans-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border selection:bg-eco-green/10 selection:text-eco-dark;
+  }
+  
+  body {
+    @apply bg-eco-cream text-eco-dark antialiased font-['GeneralSans'] tracking-tight;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-md bg-white/80 border border-white/20 shadow-sm;
+  }
+  
+  .eco-shadow {
+    @apply shadow-[0_4px_30px_rgba(0,104,56,0.1)];
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Animation delays for staggered entrances */
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 104, 56, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 104, 56, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 104, 56, 0.3);
+}
+
+/* Custom styles for EcoVision */
+.pattern-bg {
+  background-color: #f8f7f1;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23006838' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Footer styles */
+footer a:hover svg {
+  color: var(--eco-green);
+}
