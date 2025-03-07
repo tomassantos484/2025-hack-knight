@@ -13,8 +13,34 @@ const Navbar = () => {
   const { isSignedIn, signOut } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
   
-  // Determine if user is authenticated based on both Clerk state and user data
-  const isAuthenticated = isSignedIn === true || (userIsLoaded && user !== null);
+  // Enhanced authentication check - consider multiple factors
+  const isAuthenticated = Boolean(
+    (isSignedIn === true) || 
+    (userIsLoaded && user !== null) ||
+    // Check for Clerk session token in localStorage as a fallback
+    (typeof window !== 'undefined' && window.localStorage.getItem('clerk-db-jwt') !== null)
+  );
+  
+  // Force authentication check on mount and when location changes
+  useEffect(() => {
+    // Check if we just authenticated and need to refresh
+    const justAuthenticated = sessionStorage.getItem('justAuthenticated');
+    if (justAuthenticated === 'true') {
+      console.log('Just authenticated, forcing refresh of auth state');
+      sessionStorage.removeItem('justAuthenticated');
+      // Force a refresh after a short delay to ensure Clerk has time to update
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+    
+    // This will trigger a re-render when the component mounts or when the URL changes
+    const checkAuth = async () => {
+      console.log('Checking auth state in Navbar on mount/location change');
+    };
+    
+    checkAuth();
+  }, [location.pathname]);
   
   // Debug log for authentication state
   useEffect(() => {
@@ -23,9 +49,11 @@ const Navbar = () => {
       userIsLoaded,
       hasUserData: user !== null,
       isAuthenticated,
-      userData: user ? `${user.firstName} ${user.lastName}` : 'No user data'
+      hasClerkToken: typeof window !== 'undefined' && window.localStorage.getItem('clerk-db-jwt') !== null,
+      userData: user ? `${user.firstName} ${user.lastName}` : 'No user data',
+      currentPath: location.pathname
     });
-  }, [isSignedIn, user, userIsLoaded, isAuthenticated]);
+  }, [isSignedIn, user, userIsLoaded, isAuthenticated, location.pathname]);
   
   // Track scroll position to add background to navbar
   useEffect(() => {
@@ -51,6 +79,8 @@ const Navbar = () => {
       await signOut();
       // Show success toast
       toast.success('Signed out successfully');
+      // Set flag to indicate we just signed out
+      sessionStorage.setItem('justSignedOut', 'true');
       // Force a full page reload to reset all state
       window.location.href = '/';
     } catch (error) {

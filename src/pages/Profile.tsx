@@ -115,6 +115,7 @@ const Profile = () => {
       await signOut();
       toast.success('Signed out successfully');
       // Force a full page reload to reset all state
+      sessionStorage.setItem('justSignedOut', 'true');
       window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
