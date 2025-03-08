@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Layout from '../components/Layout';
+import DashboardLayout from '../components/DashboardLayout';
 import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf } from 'lucide-react';
 
 interface ScanResult {
@@ -132,7 +132,7 @@ const TrashScanner = () => {
   };
 
   return (
-    <Layout>
+    <DashboardLayout>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <motion.h1 
@@ -348,7 +348,7 @@ const TrashScanner = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

@@ -130,10 +130,9 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </div>
-          
           {/* Bottom copyright section */}
           <div className="flex flex-col md:flex-row md:justify-between items-center pt-8 mt-8 border-t border-gray-200 text-xs text-gray-500">
-            <p>© 2023 ecovision. all rights reserved.</p>
+            <p>© {new Date().getFullYear()} ecovision. all rights reserved.</p>
             <p className="flex items-center mt-4 md:mt-0">
               made with <Heart size={14} className="mx-1 text-eco-accent" /> for the planet <Leaf size={14} className="ml-1 text-eco-green" />
             </p>

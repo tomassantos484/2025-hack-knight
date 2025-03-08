@@ -1,27 +1,34 @@
-
-import React, { useRef } from 'react';
+//import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Layout from '../components/Layout';
+import LandingLayout from '../components/LandingLayout';
 import { ArrowRight, Leaf, Calendar, Upload, BarChart3, Globe, Lightbulb, LineChart, Camera, PieChart, TreePine } from 'lucide-react';
 
 const Index = () => {
-  const aboutSectionRef = useRef<HTMLElement>(null);
-
-  const scrollToAbout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    aboutSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <Layout>
-      {/* Hero Section - Full screen with approximately 1800x600 dimensions */}
-      <section className="w-full h-[600px] flex items-center justify-center px-4 sm:px-6 lg:px-10">
+    <LandingLayout>
+      {/* Hero Section - Full Screen Height */}
+      <section id="home" className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+            <defs>
+              <pattern id="leaf-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M20 2C14.5 2 10 6.5 10 12C10 17.5 14.5 22 20 22C25.5 22 30 17.5 30 12C30 6.5 25.5 2 20 2ZM20 20C15.6 20 12 16.4 12 12C12 7.6 15.6 4 20 4C24.4 4 28 7.6 28 12C28 16.4 24.4 20 20 20Z" fill="#2F855A" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#leaf-pattern)" />
+          </svg>
+        </div>
+        
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-eco-cream/40 to-white pointer-events-none"></div>
+        
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center max-w-6xl mx-auto text-center"
+          className="flex flex-col items-center max-w-6xl mx-auto text-center z-10"
         >
           <div className="inline-flex items-center mb-8 bg-eco-green/10 px-4 py-1.5 rounded-full">
             <Leaf size={16} className="text-eco-green mr-2" />
@@ -32,7 +39,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-5xl md:text-6xl font-medium mb-8 text-eco-dark tracking-tight leading-tight"
+            className="text-5xl md:text-6xl lg:text-7xl font-medium mb-8 text-eco-dark tracking-tight leading-tight"
           >
             track your personal <br />sustainability journey
           </motion.h1>
@@ -41,7 +48,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-lg text-eco-dark/80 mb-12 max-w-2xl leading-relaxed"
+            className="text-lg md:text-xl text-eco-dark/80 mb-12 max-w-2xl leading-relaxed"
           >
             log eco-friendly actions, scan trash, track your impact, and make a difference for our planet with our beautiful, intuitive dashboard
           </motion.p>
@@ -52,7 +59,7 @@ const Index = () => {
             transition={{ delay: 0.4, duration: 0.6 }}
             className="flex gap-4"
           >
-            <Link to="/actions">
+            <Link to="/sign-up">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -62,7 +69,7 @@ const Index = () => {
                 <ArrowRight size={16} className="ml-2" />
               </motion.button>
             </Link>
-            <Link to="/about">
+            <a href="#how-it-works">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -71,13 +78,36 @@ const Index = () => {
                 <span>learn more</span>
                 <ArrowRight size={16} className="ml-2" />
               </motion.button>
-            </Link>
+            </a>
+          </motion.div>
+          
+          {/* Scroll indicator */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+          >
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="flex flex-col items-center"
+            >
+              <span className="text-xs text-eco-dark/60 mb-2">Scroll to explore</span>
+              <div className="w-6 h-10 border-2 border-eco-dark/30 rounded-full flex justify-center">
+                <motion.div 
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="w-1.5 h-1.5 bg-eco-green rounded-full mt-2"
+                />
+              </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       </section>
 
       {/* How it works Section */}
-      <section className="py-24 bg-white w-full">
+      <section id="how-it-works" className="py-24 bg-white w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -147,8 +177,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Why Choose EcoVision Section */}
-      <section className="py-24 pattern-bg w-full">
+      {/* Features Section */}
+      <section id="features" className="py-24 pattern-bg w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -341,7 +371,6 @@ const Index = () => {
 
       {/* About Us Section */}
       <section 
-        ref={aboutSectionRef} 
         id="about"
         className="py-24 pattern-bg w-full"
       >
@@ -392,7 +421,7 @@ const Index = () => {
               </p>
               
               <p className="text-lg text-eco-dark/80 leading-relaxed">
-                Founded in 2023, our team is committed to creating intuitive tools that help individuals 
+                Founded in 2025, our team is committed to creating intuitive tools that help individuals 
                 understand and reduce their environmental impact through small, consistent actions.
               </p>
               
@@ -409,7 +438,7 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
-    </Layout>
+    </LandingLayout>
   );
 };
 

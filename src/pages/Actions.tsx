@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Layout from '../components/Layout';
+import DashboardLayout from '../components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ActionCard from '../components/ActionCard';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { 
   Check, X, PlusCircle, Train, Bus, Car, Bike, 
   Coffee, ShoppingBag, Utensils, Leaf, PenTool, Recycle,
@@ -22,8 +23,11 @@ interface Action {
 const Actions = () => {
   const [showForm, setShowForm] = useState(false);
   const [formAction, setFormAction] = useState<Partial<Action> | null>(null);
+  const { isSignedIn } = useAuth();
+  const { user, isLoaded: userIsLoaded } = useUser();
   
-  const actions: Record<string, Action[]> = {
+  // Define all actions without any completed flags
+  const actionsData: Record<string, Action[]> = {
     transportation: [
       {
         id: 1,
@@ -31,8 +35,7 @@ const Actions = () => {
         impact: '2.3 kg CO₂ saved',
         category: 'transportation',
         icon: <Train size={18} className="text-eco-dark/80" />,
-        co2Saved: 2.3,
-        completed: true
+        co2Saved: 2.3
       },
       {
         id: 2,
@@ -40,8 +43,7 @@ const Actions = () => {
         impact: '1.8 kg CO₂ saved',
         category: 'transportation',
         icon: <Bike size={18} className="text-eco-dark/80" />,
-        co2Saved: 1.8,
-        completed: true
+        co2Saved: 1.8
       },
       {
         id: 3,
@@ -75,8 +77,7 @@ const Actions = () => {
         impact: '0.5 kg waste reduced',
         category: 'waste reduction',
         icon: <Coffee size={18} className="text-eco-dark/80" />,
-        co2Saved: 0.05,
-        completed: true
+        co2Saved: 0.05
       },
       {
         id: 7,
@@ -84,8 +85,7 @@ const Actions = () => {
         impact: '0.3 kg waste reduced',
         category: 'waste reduction',
         icon: <ShoppingBag size={18} className="text-eco-dark/80" />,
-        co2Saved: 0.03,
-        completed: true
+        co2Saved: 0.03
       },
       {
         id: 8,
@@ -176,6 +176,18 @@ const Actions = () => {
     ]
   };
   
+  // In a real app, you would fetch the user's completed actions from a database
+  // For now, we'll just use an empty array for new users
+  const [actions, setActions] = useState(actionsData);
+  
+  // Debug log for authentication state
+  useEffect(() => {
+    console.log('Auth state in Actions:', { 
+      isSignedIn, 
+      user: user?.username || user?.firstName
+    });
+  }, [isSignedIn, user]);
+  
   const openForm = (action?: Partial<Action>) => {
     setFormAction(action || {});
     setShowForm(true);
@@ -186,6 +198,34 @@ const Actions = () => {
     setFormAction(null);
   };
   
+  // Function to handle logging an action (marking it as completed)
+  const handleLogAction = (actionId: number) => {
+    // In a real app, you would send this to a backend
+    // For now, we'll just update the local state
+    setActions(prevActions => {
+      const newActions = { ...prevActions };
+      
+      // Find the category that contains this action
+      for (const category in newActions) {
+        const actionIndex = newActions[category].findIndex(a => a.id === actionId);
+        if (actionIndex !== -1) {
+          // Create a new array for this category with the updated action
+          newActions[category] = [
+            ...newActions[category].slice(0, actionIndex),
+            { ...newActions[category][actionIndex], completed: true },
+            ...newActions[category].slice(actionIndex + 1)
+          ];
+          break;
+        }
+      }
+      
+      return newActions;
+    });
+    
+    // Close the form
+    closeForm();
+  };
+
   const customAction = {
     id: 999,
     title: 'Add custom action',
@@ -195,7 +235,7 @@ const Actions = () => {
   };
 
   return (
-    <Layout>
+    <DashboardLayout>
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <motion.h1 
@@ -361,6 +401,7 @@ const Actions = () => {
                   <button
                     type="button"
                     className="px-4 py-2 bg-eco-green text-white rounded-lg hover:bg-eco-green/90 transition-colors flex items-center gap-1.5"
+                    onClick={() => formAction?.id ? handleLogAction(formAction.id) : closeForm()}
                   >
                     <Check size={16} />
                     Log Action
@@ -371,7 +412,7 @@ const Actions = () => {
           </motion.div>
         )}
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

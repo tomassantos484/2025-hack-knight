@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Layout from '../components/Layout';
+import DashboardLayout from '../components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut, Leaf } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -161,7 +161,7 @@ const Profile = () => {
       toast.success('Signed out successfully');
       // Force a full page reload to reset all state
       sessionStorage.setItem('justSignedOut', 'true');
-      window.location.href = '/';
+      window.location.href = '/sign-in';
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -171,17 +171,17 @@ const Profile = () => {
   // Show loading state while user data is loading
   if (!userIsLoaded) {
     return (
-      <Layout>
+      <DashboardLayout>
         <div className="max-w-5xl mx-auto flex flex-col items-center justify-center min-h-[60vh]">
           <div className="w-12 h-12 border-4 border-eco-green border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-eco-dark">Loading your profile...</p>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Layout>
+    <DashboardLayout>
       <div className="max-w-5xl mx-auto">
         {/* Profile Header */}
         <div className="mb-8">
@@ -515,7 +515,7 @@ const Profile = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

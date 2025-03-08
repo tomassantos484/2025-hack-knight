@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
-import Layout from '../components/Layout';
+import LandingLayout from '../components/LandingLayout';
 import { Leaf, ArrowRight } from 'lucide-react';
 
 const About = () => {
   return (
-    <Layout>
+    <LandingLayout>
       <section className="py-12 pattern-bg">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div 
@@ -52,7 +51,7 @@ const About = () => {
               </p>
               
               <p className="text-lg text-eco-dark/80 leading-relaxed">
-                Founded in 2023, our team is committed to creating intuitive tools that help individuals 
+                Founded in 2025, our team is committed to creating intuitive tools that help individuals 
                 understand and reduce their environmental impact through small, consistent actions.
               </p>
               
@@ -90,7 +89,7 @@ const About = () => {
           </motion.div>
         </div>
       </section>
-    </Layout>
+    </LandingLayout>
   );
 };
 

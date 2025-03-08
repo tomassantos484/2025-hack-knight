@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { SignUp as ClerkSignUp, useAuth } from '@clerk/clerk-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import Layout from '../components/Layout';
+import AuthLayout from '../components/AuthLayout';
 
 const SignUp = () => {
   const { isSignedIn } = useAuth();
@@ -13,7 +13,7 @@ const SignUp = () => {
   
   // Get the redirect URL from query parameters
   const searchParams = new URLSearchParams(location.search);
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const redirectUrl = searchParams.get('redirect') || '/actions';
   
   // Debug log for authentication state
   useEffect(() => {
@@ -38,7 +38,7 @@ const SignUp = () => {
   };
   
   return (
-    <Layout>
+    <AuthLayout>
       <section className="py-8 min-h-[calc(100vh-80px)] flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -125,7 +125,7 @@ const SignUp = () => {
           </div>
         </motion.div>
       </section>
-    </Layout>
+    </AuthLayout>
   );
 };
 
