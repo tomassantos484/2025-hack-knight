@@ -59,42 +59,38 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
         </Link>
         
         <div className="hidden md:flex items-center space-x-10">
-          <a 
-            href="#home" 
-            onClick={scrollToSection('home')}
+          <Link 
+            to="/" 
             className={`transition-colors ${
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
             Home
-          </a>
-          <a 
-            href="#how-it-works" 
-            onClick={scrollToSection('how-it-works')}
+          </Link>
+          <Link 
+            to="/how-it-works" 
             className={`transition-colors ${
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
             How It Works
-          </a>
-          <a 
-            href="#features" 
-            onClick={scrollToSection('features')}
+          </Link>
+          <Link 
+            to="/features" 
             className={`transition-colors ${
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
             Features
-          </a>
-          <a 
-            href="#about" 
-            onClick={scrollToSection('about')}
+          </Link>
+          <Link 
+            to="/about" 
             className={`transition-colors ${
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
             About Us
-          </a>
+          </Link>
           <Link to="/sign-in">
             <motion.button 
               whileHover={{ scale: 1.05 }}
@@ -202,31 +198,19 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="#how-it-works" 
-                    onClick={scrollToSection('how-it-works')}
-                    className="text-sm text-gray-600 hover:text-eco-green transition-colors"
-                  >
+                  <Link to="/how-it-works" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     How It Works
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a 
-                    href="#features" 
-                    onClick={scrollToSection('features')}
-                    className="text-sm text-gray-600 hover:text-eco-green transition-colors"
-                  >
+                  <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     Features
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a 
-                    href="#about" 
-                    onClick={scrollToSection('about')}
-                    className="text-sm text-gray-600 hover:text-eco-green transition-colors"
-                  >
+                  <Link to="/about" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     About Us
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

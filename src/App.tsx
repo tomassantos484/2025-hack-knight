@@ -15,6 +15,8 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import EcoWallet from "./pages/EcoWallet";
 import Receiptify from "./pages/Receiptify";
+import HowItWorks from "./pages/HowItWorks";
+import Features from "./pages/Features";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 
@@ -77,6 +79,28 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Index />} />
+        <Route path="/how-it-works" element={
+          <motion.div
+            initial="initial"
+            animate="in"
+            exit="out"
+            variants={pageVariants}
+            transition={pageTransition}
+          >
+            <HowItWorks />
+          </motion.div>
+        } />
+        <Route path="/features" element={
+          <motion.div
+            initial="initial"
+            animate="in"
+            exit="out"
+            variants={pageVariants}
+            transition={pageTransition}
+          >
+            <Features />
+          </motion.div>
+        } />
         <Route path="/sign-in/*" element={
           <motion.div
             initial="initial"

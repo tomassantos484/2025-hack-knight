@@ -1,7 +1,6 @@
-
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Leaf, Github, Twitter, Heart } from 'lucide-react';
 
 interface LayoutProps {
@@ -9,10 +8,28 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen pattern-bg flex flex-col">
       {/* Navbar - Using the same design as landing page */}
-      <nav className="w-full px-4 sm:px-6 lg:px-10 py-6 flex justify-between items-center">
+      <nav className={`w-full px-4 sm:px-6 lg:px-10 py-6 flex justify-between items-center fixed top-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
+      }`}>
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
@@ -21,26 +38,26 @@ const Layout = ({ children }: LayoutProps) => {
           />
         </Link>
         
-        <div className="flex items-center space-x-10">
+        <div className="hidden md:flex items-center space-x-10">
           <Link to="/" className="text-gray-800 hover:text-eco-green transition-colors">
-            home
+            Home
+          </Link>
+          <Link to="/how-it-works" className="text-gray-800 hover:text-eco-green transition-colors">
+            How It Works
+          </Link>
+          <Link to="/features" className="text-gray-800 hover:text-eco-green transition-colors">
+            Features
           </Link>
           <Link to="/about" className="text-gray-800 hover:text-eco-green transition-colors">
-            about us
+            About Us
           </Link>
-          <Link to="/actions" className="text-gray-800 hover:text-eco-green transition-colors">
-            dashboard
-          </Link>
-          <Link to="/trash-scanner" className="text-gray-800 hover:text-eco-green transition-colors">
-            trash scanner
-          </Link>
-          <Link to="/profile">
+          <Link to="/sign-in">
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
             >
-              <span>sign in</span>
+              <span>Sign In</span>
             </motion.button>
           </Link>
         </div>
@@ -56,7 +73,7 @@ const Layout = ({ children }: LayoutProps) => {
       </motion.main>
 
       {/* New Footer Design */}
-      <footer className="border-t border-gray-200 bg-white/50 py-12 mt-12 w-full">
+      <footer className="border-t border-gray-200 bg-white/50 py-12 w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             {/* Logo and description */}
@@ -69,49 +86,49 @@ const Layout = ({ children }: LayoutProps) => {
                 />
               </Link>
               <p className="text-sm text-gray-600 leading-relaxed">
-                track your sustainability journey and make a positive impact on the environment
+                Track your sustainability journey and make a positive impact on the environment
               </p>
             </div>
             
             {/* Navigation Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">navigation</h4>
+              <h4 className="text-sm font-medium text-gray-800">Navigation</h4>
               <ul className="space-y-2">
                 <li>
                   <Link to="/" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    home
+                    Home
                   </Link>
                 </li>
                 <li>
-                  <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    dashboard
+                  <Link to="/how-it-works" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    About Us
                   </Link>
                 </li>
               </ul>
             </div>
             
-            {/* Eco Actions */}
+            {/* Account Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">eco actions</h4>
+              <h4 className="text-sm font-medium text-gray-800">Account</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    log actions
+                  <Link to="/sign-in" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    Sign In
                   </Link>
                 </li>
                 <li>
-                  <Link to="/trash-scanner" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    trash scanner
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    challenges
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    eco tips
+                  <Link to="/sign-up" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    Sign Up
                   </Link>
                 </li>
               </ul>
@@ -119,7 +136,7 @@ const Layout = ({ children }: LayoutProps) => {
             
             {/* Connect */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">connect</h4>
+              <h4 className="text-sm font-medium text-gray-800">Connect</h4>
               <div className="flex space-x-4">
                 <a href="https://github.com/tomassantos484/2025-hack-knight" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
                   <Github size={20} />
@@ -130,6 +147,7 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </div>
+          
           {/* Bottom copyright section */}
           <div className="flex flex-col md:flex-row md:justify-between items-center pt-8 mt-8 border-t border-gray-200 text-xs text-gray-500">
             <p>© {new Date().getFullYear()} ecovision. all rights reserved.</p>

@@ -68,6 +68,8 @@ const Navbar = () => {
   const getNavItems = () => {
     const items = [
       { name: 'home', path: '/' },
+      { name: 'how it works', path: '/how-it-works' },
+      { name: 'features', path: '/features' },
       { name: 'about us', path: '/about' },
     ];
 

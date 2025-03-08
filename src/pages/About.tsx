@@ -52,7 +52,7 @@ const About = () => {
                 <span className="text-sm text-eco-dark/80">our story</span>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-medium text-eco-dark">Meet the Team Behind EcoVision</h2>
+              <h2 className="text-3xl md:text-4xl text-eco-dark">Meet the Team Behind EcoVision</h2>
               
               <p className="text-lg text-eco-dark/80 leading-relaxed">
                 We're a passionate group of environmentalists, designers, and developers united by a common goal: 

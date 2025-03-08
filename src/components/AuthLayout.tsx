@@ -55,6 +55,12 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
               <Link to="/" className="text-sm text-gray-500 hover:text-eco-green">
                 Home
               </Link>
+              <Link to="/how-it-works" className="text-sm text-gray-500 hover:text-eco-green">
+                How It Works
+              </Link>
+              <Link to="/features" className="text-sm text-gray-500 hover:text-eco-green">
+                Features
+              </Link>
               <Link to="/about" className="text-sm text-gray-500 hover:text-eco-green">
                 About
               </Link>
