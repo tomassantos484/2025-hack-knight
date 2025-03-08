@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Leaf, User, LogOut, Menu, X, BarChart3, Camera, Settings, Wallet, Receipt } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
+import EcoChatbot from './EcoChatbot';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -48,7 +49,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-eco-cream/30 flex flex-col">
       {/* Dashboard Navbar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,15 +162,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         )}
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      {/* Main content */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        {children}
       </main>
 
-      {/* Dashboard Footer */}
-      <footer className="bg-white border-t border-gray-200 py-4">
+      {/* Add the chatbot */}
+      <EcoChatbot />
+      
+      {/* Footer */}
+      <footer className="py-6 w-full mt-auto bg-white border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-sm text-gray-500">
