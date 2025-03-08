@@ -1,7 +1,7 @@
 import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, User, LogOut, Menu, X, BarChart3, Camera, Settings } from 'lucide-react';
+import { Leaf, User, LogOut, Menu, X, BarChart3, Camera, Settings, Wallet, Receipt } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 
@@ -42,6 +42,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = [
     { name: 'Dashboard', path: '/actions', icon: <BarChart3 size={18} /> },
     { name: 'Trash Scanner', path: '/trash-scanner', icon: <Camera size={18} /> },
+    { name: 'EcoWallet', path: '/eco-wallet', icon: <Wallet size={18} /> },
+    { name: 'Receiptify', path: '/receiptify', icon: <Receipt size={18} /> },
     { name: 'Profile', path: '/profile', icon: <User size={18} /> }
   ];
 
@@ -61,8 +63,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => (
+            <nav className="hidden md:flex items-center space-x-6">
+              {navItems.slice(0, 4).map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
@@ -171,11 +173,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-sm text-gray-500">
-              © {new Date().getFullYear()} ecovision. All rights reserved.
+              © {new Date().getFullYear()} EcoVision. All rights reserved.
             </div>
             <div className="mt-4 md:mt-0 flex items-center space-x-4">
               <Link to="/actions" className="text-sm text-gray-500 hover:text-eco-green">
                 Dashboard
+              </Link>
+              <Link to="/about" className="text-sm text-gray-500 hover:text-eco-green">
+                About
               </Link>
               <a 
                 href="https://github.com/tomassantos484/2025-hack-knight" 

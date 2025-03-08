@@ -13,6 +13,8 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import EcoWallet from "./pages/EcoWallet";
+import Receiptify from "./pages/Receiptify";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 
@@ -110,6 +112,16 @@ const AnimatedRoutes = () => {
         <Route path="/profile" element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } />
+        <Route path="/eco-wallet" element={
+          <ProtectedRoute>
+            <EcoWallet />
+          </ProtectedRoute>
+        } />
+        <Route path="/receiptify" element={
+          <ProtectedRoute>
+            <Receiptify />
           </ProtectedRoute>
         } />
         <Route path="/about" element={<About />} />

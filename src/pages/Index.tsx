@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import LandingLayout from '../components/LandingLayout';
-import { ArrowRight, Leaf, Calendar, Upload, BarChart3, Globe, Lightbulb, LineChart, Camera, PieChart, TreePine } from 'lucide-react';
+import { ArrowRight, Leaf, Calendar, Upload, BarChart3, Globe, Lightbulb, LineChart, Camera, PieChart, TreePine, Wallet, Receipt } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -193,7 +193,7 @@ const Index = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Community Impact */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -211,7 +211,7 @@ const Index = () => {
               </p>
             </motion.div>
 
-            {/* Educational Resources */}
+            {/* Trash Scanner */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -220,15 +220,15 @@ const Index = () => {
               className="flex flex-col items-center text-center p-6"
             >
               <div className="w-16 h-16 flex items-center justify-center mb-6">
-                <Lightbulb size={42} className="text-eco-green" />
+                <Camera size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Educational Resources</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">Trash Scanner</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Access our knowledge base of sustainability tips, guides, and best practices for eco-friendly living.
+                Upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
               </p>
             </motion.div>
 
-            {/* Data-Driven Solutions */}
+            {/* EcoWallet */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -237,11 +237,28 @@ const Index = () => {
               className="flex flex-col items-center text-center p-6"
             >
               <div className="w-16 h-16 flex items-center justify-center mb-6">
-                <LineChart size={42} className="text-eco-green" />
+                <Wallet size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Data-Driven Solutions</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">EcoWallet</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Make informed decisions with our analytics and personalized recommendations based on your eco habits.
+                Earn Buds for eco-friendly actions and spend them on digital badges, eco-friendly merchandise, or donations to environmental causes.
+              </p>
+            </motion.div>
+
+            {/* Receiptify */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="flex flex-col items-center text-center p-6"
+            >
+              <div className="w-16 h-16 flex items-center justify-center mb-6">
+                <Receipt size={42} className="text-eco-green" />
+              </div>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">Receiptify</h3>
+              <p className="text-eco-dark/80 leading-relaxed">
+                Scan your receipts to analyze purchases, earn Buds for eco-friendly items, and get personalized sustainability recommendations.
               </p>
             </motion.div>
           </div>
