@@ -1,3 +1,14 @@
+html, body {
+  scroll-behavior: auto;
+  overflow-x: hidden;
+  scroll-padding-top: 0;
+  scroll-margin-top: 0;
+}
+
+/* Force scroll to top on page load */
+html {
+  scroll-behavior: auto !important;
+}
 
 @tailwind base;
 @tailwind components;

@@ -1,6 +1,6 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Leaf, Github, Twitter, Heart, ArrowRight } from 'lucide-react';
 
 interface LandingLayoutProps {
@@ -9,6 +9,17 @@ interface LandingLayoutProps {
 
 const LandingLayout = ({ children }: LandingLayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  
+  // Use useLayoutEffect to ensure scroll position is set before browser paint
+  useLayoutEffect(() => {
+    // Force scroll to top immediately
+    window.scrollTo(0, 0);
+    
+    // Also set body scroll position
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, [location.pathname]);
   
   // Track scroll position to add background to navbar
   useEffect(() => {

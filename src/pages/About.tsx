@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import LandingLayout from '../components/LandingLayout';
 import { Leaf, ArrowRight } from 'lucide-react';
 
 const About = () => {
+  // Use useLayoutEffect to ensure scroll position is set before browser paint
+  useLayoutEffect(() => {
+    // Force scroll to top immediately
+    window.scrollTo(0, 0);
+    
+    // Also set body scroll position
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, []);
+
   return (
     <LandingLayout>
       <section className="py-12 pattern-bg">

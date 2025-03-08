@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Leaf, User, LogOut, Menu, X, BarChart3, Camera, Settings } from 'lucide-react';
@@ -15,6 +15,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { isSignedIn, signOut } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
+
+  // Use useLayoutEffect to ensure scroll position is set before browser paint
+  useLayoutEffect(() => {
+    // Force scroll to top immediately
+    window.scrollTo(0, 0);
+    
+    // Also set body scroll position
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, [location.pathname]);
 
   // Handle sign out
   const handleSignOut = async () => {
