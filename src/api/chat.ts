@@ -1,9 +1,14 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { getMockResponse } from './mockResponses';
 
-// Initialize the Gemini API with the API key from environment variables
-const GEMINI_API_KEY = import.meta.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// Get the API key from environment variables with proper fallback
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+// Initialize the Gemini API only if we have a key
+let genAI = null;
+if (GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+}
 
 // Define the model to use - using the most stable model
 const modelName = "gemini-2.0-flash";
@@ -30,17 +35,18 @@ Important: Never claim to have capabilities you don't have, like accessing the u
 const USE_MOCK_RESPONSES = false;
 
 export async function handleChatRequest(message: string, history: { role: string; content: string }[]) {
+  console.log('Chat request received:', { message, historyLength: history.length });
+  
   try {
-    console.log('Gemini API Key:', GEMINI_API_KEY ? 'Present' : 'Missing');
-    
+    // Check if API key is available
     if (!GEMINI_API_KEY) {
-      console.log('API key missing, using mock response');
+      console.warn('Gemini API Key is missing. Using mock response instead.');
       return { response: getMockResponse(message) };
     }
     
-    // Use mock responses if flag is set
+    // Use mock responses if flag is explicitly set to true
     if (USE_MOCK_RESPONSES) {
-      console.log('Using mock response system');
+      console.log('Using mock response system (flag is set to true)');
       return { response: getMockResponse(message) };
     }
     
@@ -53,6 +59,12 @@ export async function handleChatRequest(message: string, history: { role: string
     }
     
     try {
+      // Ensure genAI is initialized
+      if (!genAI) {
+        console.error('Gemini API not initialized. Falling back to mock response.');
+        return { response: getMockResponse(message) };
+      }
+      
       // Get the model - using the correct parameter structure
       const model = genAI.getGenerativeModel({ model: modelName });
   
@@ -68,7 +80,11 @@ export async function handleChatRequest(message: string, history: { role: string
         }));
       }
   
-      console.log('Sending to Gemini API:', { message, chatHistory });
+      console.log('Sending to Gemini API:', { 
+        message, 
+        historyLength: chatHistory.length,
+        apiKeyPresent: !!GEMINI_API_KEY
+      });
   
       // Create generation config
       const generationConfig = {
@@ -119,7 +135,7 @@ export async function handleChatRequest(message: string, history: { role: string
       
       const response = result.response.text();
       
-      console.log('Received from Gemini API:', { response });
+      console.log('Received from Gemini API:', { responseLength: response.length });
   
       return { response };
     } catch (apiError) {

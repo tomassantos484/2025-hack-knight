@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, X, Leaf, Bot, User, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Send, X, Leaf, Bot, User, ChevronDown, ChevronUp, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { handleChatRequest } from '../api/chat';
+import { checkGeminiApiKey } from '../api/envCheck';
 
 interface Message {
   id: string;
@@ -31,8 +32,19 @@ const EcoChatbot = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState({ isAvailable: true, message: '' });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Check API key status on component mount
+  useEffect(() => {
+    const status = checkGeminiApiKey();
+    setApiKeyStatus(status);
+    
+    if (!status.isAvailable) {
+      console.warn('Gemini API key issue:', status.message);
+    }
+  }, []);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -72,8 +84,18 @@ const EcoChatbot = () => {
           content: msg.content,
         }));
       
+      console.log('Sending chat request with:', { 
+        promptText, 
+        historyLength: messageHistory.length 
+      });
+      
       // Call the API
       const result = await handleChatRequest(promptText, messageHistory);
+      
+      if (result.error) {
+        console.error('Error returned from chat API:', result);
+        throw new Error(result.response || 'Unknown error from chat API');
+      }
       
       // Add assistant message
       const assistantMessage: Message = {
@@ -87,15 +109,13 @@ const EcoChatbot = () => {
     } catch (error) {
       console.error('Error in chat flow:', error);
       
-      // Only show technical error details in development
-      if (process.env.NODE_ENV === 'development') {
-        toast.error('Error in chat flow. Check console for details.');
-      }
+      // Show error toast in both development and production
+      toast.error('Sorry, I had trouble responding. Please try again.');
       
-      // Add a generic error message
+      // Add a more helpful error message to the chat
       const errorAssistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I couldn't process that request. Let's try a different question about sustainability or EcoVision features.",
+        content: "I'm sorry, I encountered an issue while processing your request. This might be due to a connection problem or a temporary service disruption. Could you try asking again, or perhaps rephrase your question about sustainability or EcoVision features?",
         role: 'assistant',
         timestamp: new Date(),
       };
@@ -165,6 +185,14 @@ const EcoChatbot = () => {
               <X size={18} />
             </button>
           </div>
+          
+          {/* API Key Warning */}
+          {!apiKeyStatus.isAvailable && (
+            <div className="bg-amber-50 border-b border-amber-200 p-2 text-xs text-amber-800 flex items-center">
+              <AlertTriangle size={14} className="mr-1 flex-shrink-0" />
+              <span>Using mock responses: {apiKeyStatus.message}</span>
+            </div>
+          )}
           
           {/* Chat messages */}
           <div className="flex-1 overflow-y-auto p-4 bg-eco-cream/30">

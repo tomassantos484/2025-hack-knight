@@ -29,5 +29,39 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
+    build: {
+      // Increase the warning limit to avoid unnecessary warnings
+      chunkSizeWarningLimit: 800,
+      // Optimize the build
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: mode === 'production',
+          drop_debugger: mode === 'production',
+        },
+      },
+      // Configure code splitting
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor code into separate chunks
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-ui': ['framer-motion', '@clerk/clerk-react', 'lucide-react'],
+            'vendor-utils': ['@tanstack/react-query', 'sonner', 'date-fns'],
+            // Split app code by feature
+            'feature-dashboard': [
+              './src/components/DashboardLayout.tsx',
+              './src/components/dashboard/DashboardHeader.tsx',
+              './src/components/dashboard/DashboardFooter.tsx',
+            ],
+            'feature-chat': [
+              './src/components/EcoChatbot.tsx',
+              './src/api/chat.ts',
+              './src/api/mockResponses.ts',
+            ],
+          },
+        },
+      },
+    },
   };
 });

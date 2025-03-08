@@ -5,27 +5,37 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-import Index from "./pages/Index";
-import TrashScanner from "./pages/TrashScanner";
-import Actions from "./pages/Actions";
-import Profile from "./pages/Profile";
-import About from "./pages/About";
-import NotFound from "./pages/NotFound";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import EcoWallet from "./pages/EcoWallet";
-import Receiptify from "./pages/Receiptify";
-import HowItWorks from "./pages/HowItWorks";
-import Features from "./pages/Features";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import MissingClerkKeyError from "./components/MissingClerkKeyError";
 import { getEnvVariable, hasEnvVariable } from "./utils/env";
 
+// Dynamically import page components
+const Index = lazy(() => import("./pages/Index"));
+const TrashScanner = lazy(() => import("./pages/TrashScanner"));
+const Actions = lazy(() => import("./pages/Actions"));
+const Profile = lazy(() => import("./pages/Profile"));
+const About = lazy(() => import("./pages/About"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const SignIn = lazy(() => import("./pages/SignIn"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const EcoWallet = lazy(() => import("./pages/EcoWallet"));
+const Receiptify = lazy(() => import("./pages/Receiptify"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const Features = lazy(() => import("./pages/Features"));
+
 // Get the publishable key from environment variables with safe access
 const clerkPubKey = getEnvVariable('VITE_CLERK_PUBLISHABLE_KEY');
 const hasClerkKey = hasEnvVariable('VITE_CLERK_PUBLISHABLE_KEY');
+
+// Loading component for suspense fallback
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="w-12 h-12 border-4 border-eco-green border-t-transparent rounded-full animate-spin"></div>
+    <p className="mt-4 text-eco-dark">Loading page...</p>
+  </div>
+);
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,12 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   
   if (!isLoaded) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="w-12 h-12 border-4 border-eco-green border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-eco-dark">Loading authentication...</p>
-      </div>
-    );
+    return <PageLoader />;
   }
   
   if (!isSignedIn) {
@@ -79,81 +84,94 @@ const AnimatedRoutes = () => {
     duration: 0.3
   };
   
+  // Wrap component with motion and suspense
+  const AnimatedPage = ({ children }: { children: React.ReactNode }) => (
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
+    </motion.div>
+  );
+  
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={
+          <Suspense fallback={<PageLoader />}>
+            <Index />
+          </Suspense>
+        } />
         <Route path="/how-it-works" element={
-          <motion.div
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
-          >
+          <AnimatedPage>
             <HowItWorks />
-          </motion.div>
+          </AnimatedPage>
         } />
         <Route path="/features" element={
-          <motion.div
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
-          >
+          <AnimatedPage>
             <Features />
-          </motion.div>
+          </AnimatedPage>
         } />
         <Route path="/sign-in/*" element={
-          <motion.div
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
-          >
+          <AnimatedPage>
             <SignIn />
-          </motion.div>
+          </AnimatedPage>
         } />
         <Route path="/sign-up/*" element={
-          <motion.div
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
-          >
+          <AnimatedPage>
             <SignUp />
-          </motion.div>
+          </AnimatedPage>
         } />
         <Route path="/trash-scanner" element={
           <ProtectedRoute>
-            <TrashScanner />
+            <Suspense fallback={<PageLoader />}>
+              <TrashScanner />
+            </Suspense>
           </ProtectedRoute>
         } />
         <Route path="/actions" element={
           <ProtectedRoute>
-            <Actions />
+            <Suspense fallback={<PageLoader />}>
+              <Actions />
+            </Suspense>
           </ProtectedRoute>
         } />
         <Route path="/profile" element={
           <ProtectedRoute>
-            <Profile />
+            <Suspense fallback={<PageLoader />}>
+              <Profile />
+            </Suspense>
           </ProtectedRoute>
         } />
         <Route path="/eco-wallet" element={
           <ProtectedRoute>
-            <EcoWallet />
+            <Suspense fallback={<PageLoader />}>
+              <EcoWallet />
+            </Suspense>
           </ProtectedRoute>
         } />
         <Route path="/receiptify" element={
           <ProtectedRoute>
-            <Receiptify />
+            <Suspense fallback={<PageLoader />}>
+              <Receiptify />
+            </Suspense>
           </ProtectedRoute>
         } />
-        <Route path="/about" element={<About />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/about" element={
+          <Suspense fallback={<PageLoader />}>
+            <About />
+          </Suspense>
+        } />
+        <Route path="*" element={
+          <Suspense fallback={<PageLoader />}>
+            <NotFound />
+          </Suspense>
+        } />
       </Routes>
     </AnimatePresence>
   );
