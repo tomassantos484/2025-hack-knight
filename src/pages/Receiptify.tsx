@@ -2,8 +2,17 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { Receipt, Upload, Camera, AlertCircle, CheckCircle, Leaf, ShoppingBag, X, BarChart3, Clock, ArrowRight } from 'lucide-react';
+import { Receipt, Upload, Camera, AlertCircle, CheckCircle, Leaf, ShoppingBag, X, BarChart3, Clock, ArrowRight, Bug } from 'lucide-react';
 import { toast } from 'sonner';
+import { analyzeReceipt } from '../services/receiptService';
+import { earnBuds } from '../services/walletService';
+
+// Add this type for the Clerk user with getToken method
+interface ClerkUser {
+  id: string;
+  getToken: (options: { template: string }) => Promise<string>;
+  // Add other properties as needed
+}
 
 // Interface for receipt item
 interface ReceiptItem {
@@ -26,6 +35,7 @@ interface ReceiptAnalysis {
   totalCarbonFootprint: number;
   budsEarned: number;
   items: ReceiptItem[];
+  extractedText: string;
 }
 
 const Receiptify = () => {
@@ -93,79 +103,47 @@ const Receiptify = () => {
     
     setIsScanning(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock receipt analysis data
-      const mockAnalysis: ReceiptAnalysis = {
-        totalItems: 5,
-        ecoFriendlyItems: 2,
-        totalSpent: 37.85,
-        ecoFriendlySpent: 12.99,
-        ecoScore: 42, // 0-100 scale
-        totalCarbonFootprint: 8.2, // kg CO2
-        budsEarned: 15,
-        items: [
-          {
-            id: 1,
-            name: 'Organic Apples (3)',
-            price: 4.99,
-            isEcoFriendly: true,
-            category: 'Produce',
-            carbonFootprint: 0.3
-          },
-          {
-            id: 2,
-            name: 'Reusable Water Bottle',
-            price: 7.99,
-            isEcoFriendly: true,
-            category: 'Home Goods',
-            carbonFootprint: 1.2
-          },
-          {
-            id: 3,
-            name: 'Plastic Wrapped Cookies',
-            price: 3.49,
-            isEcoFriendly: false,
-            category: 'Snacks',
-            carbonFootprint: 1.8,
-            alternativeSuggestion: 'Try bulk bin cookies in your own container'
-          },
-          {
-            id: 4,
-            name: 'Paper Towels',
-            price: 5.99,
-            isEcoFriendly: false,
-            category: 'Household',
-            carbonFootprint: 2.1,
-            alternativeSuggestion: 'Switch to reusable cloth towels'
-          },
-          {
-            id: 5,
-            name: 'Single-Use Plastic Bags',
-            price: 2.99,
-            isEcoFriendly: false,
-            category: 'Household',
-            carbonFootprint: 2.8,
-            alternativeSuggestion: 'Use reusable shopping bags'
-          }
-        ]
-      };
+    try {
+      // Convert base64 to file
+      const fetchResponse = await fetch(receiptImage);
+      const blob = await fetchResponse.blob();
+      const file = new File([blob], "receipt.jpg", { type: "image/jpeg" });
       
-      setAnalysis(mockAnalysis);
+      // We'll skip trying to get a token since it's not available in this version of Clerk
+      // Just pass the user ID if the user is signed in
+      const userId = isSignedIn && user ? user.id : undefined;
+      
+      // Call our analyze receipt service with user ID only
+      const analysis = await analyzeReceipt(file, userId);
+      
+      setAnalysis(analysis);
       setIsScanning(false);
       
       // Add to scan history
       const newScan = {
         date: new Date().toLocaleDateString(),
-        score: mockAnalysis.ecoScore,
-        items: mockAnalysis.totalItems
+        score: analysis.ecoScore,
+        items: analysis.totalItems
       };
       
       setHistory(prev => [newScan, ...prev]);
       
+      // Award buds to the user through wallet service if they're signed in
+      if (isSignedIn && user) {
+        await earnBuds(
+          user.id,
+          analysis.budsEarned,
+          `Receipt scan: ${analysis.ecoFriendlyItems} eco-friendly items found`
+        );
+      }
+      
       // Show success toast
-      toast.success(`Receipt analyzed! You earned ${mockAnalysis.budsEarned} Buds`);
-    }, 2000);
+      toast.success(`Receipt analyzed! You earned ${analysis.budsEarned} Buds`);
+    } catch (error) {
+      console.error('Error analyzing receipt:', error);
+      toast.error('Failed to analyze receipt. Please try again.');
+      setIsScanning(false);
+    }
   };
   
   // Handle reset
@@ -184,8 +162,23 @@ const Receiptify = () => {
     return 'text-eco-green';
   };
   
+  // Debug function
+  const debugAnalysis = () => {
+    console.log('Current analysis data:', analysis);
+    alert('Analysis data logged to console');
+  };
+  
   return (
     <DashboardLayout>
+      {/* Debug button fixed in bottom right */}
+      <button
+        onClick={debugAnalysis}
+        className="fixed bottom-4 right-4 z-50 bg-black text-white p-2 rounded-full shadow-lg"
+        aria-label="Debug"
+      >
+        <Bug size={20} />
+      </button>
+      
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <motion.h1 
@@ -315,86 +308,90 @@ const Receiptify = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white rounded-xl p-6 eco-shadow mb-8"
+                className="bg-white rounded-xl p-6 eco-shadow mb-8 relative"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-medium">Receipt Analysis</h2>
+                  <h2 className="text-2xl font-medium text-[#4a4a4a]">Receipt Analysis</h2>
                   <button
                     onClick={handleReset}
-                    className="p-2 text-eco-dark/70 hover:text-eco-dark"
+                    className="p-2 text-[#4a4a4a]/70 hover:text-[#4a4a4a] absolute top-4 right-4"
                   >
-                    <X size={20} />
+                    <X size={24} />
                   </button>
                 </div>
                 
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-eco-cream p-4 rounded-lg">
-                    <div className="text-sm text-eco-dark/70 mb-1">Eco Score</div>
-                    <div className={`text-2xl font-bold ${getScoreColor(analysis.ecoScore)}`}>
+                {/* Summary Stats - Styled exactly like the image */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-[#f9f8f3] rounded-xl p-6">
+                    <div className="text-[#4a4a4a] mb-2">Eco Score</div>
+                    <div className="text-[#e6b93c] text-3xl font-medium">
                       {analysis.ecoScore}/100
                     </div>
                   </div>
                   
-                  <div className="bg-eco-cream p-4 rounded-lg">
-                    <div className="text-sm text-eco-dark/70 mb-1">Eco Items</div>
-                    <div className="text-2xl font-bold">
+                  <div className="bg-[#f9f8f3] rounded-xl p-6">
+                    <div className="text-[#4a4a4a] mb-2">Eco Items</div>
+                    <div className="text-[#4a4a4a] text-3xl font-medium">
                       {analysis.ecoFriendlyItems}/{analysis.totalItems}
                     </div>
                   </div>
                   
-                  <div className="bg-eco-cream p-4 rounded-lg">
-                    <div className="text-sm text-eco-dark/70 mb-1">Carbon Footprint</div>
-                    <div className="text-2xl font-bold">
+                  <div className="bg-[#f9f8f3] rounded-xl p-6">
+                    <div className="text-[#4a4a4a] mb-2">Carbon Footprint</div>
+                    <div className="text-[#4a4a4a] text-3xl font-medium">
                       {analysis.totalCarbonFootprint} kg
                     </div>
                   </div>
                   
-                  <div className="bg-eco-cream p-4 rounded-lg">
-                    <div className="text-sm text-eco-dark/70 mb-1">Buds Earned</div>
-                    <div className="text-2xl font-bold text-eco-green flex items-center">
-                      <Leaf size={18} className="mr-1" />
+                  <div className="bg-[#f9f8f3] rounded-xl p-6">
+                    <div className="text-[#4a4a4a] mb-2">Buds Earned</div>
+                    <div className="text-[#4a9b5c] text-3xl font-medium flex items-center">
+                      <Leaf size={24} className="mr-2" />
                       {analysis.budsEarned}
                     </div>
                   </div>
                 </div>
                 
-                {/* Items List */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Items Analysis</h3>
+                {/* Items Analysis - Styled exactly like the image */}
+                <div className="mb-8">
+                  <h3 className="text-2xl font-medium mb-4 text-[#4a4a4a]">Items Analysis</h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {analysis.items.map(item => (
                       <div 
                         key={item.id}
-                        className={`p-4 rounded-lg border ${
+                        className={`p-6 rounded-xl ${
                           item.isEcoFriendly 
-                            ? 'border-eco-green/20 bg-eco-green/5' 
-                            : 'border-red-200 bg-red-50'
+                            ? 'bg-[#f5f9f6] border border-[#4a9b5c]/20' 
+                            : 'bg-[#fef5f5] border border-[#e57373]/20'
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <div className="flex items-center">
                               {item.isEcoFriendly ? (
-                                <CheckCircle size={16} className="text-eco-green mr-2" />
+                                <CheckCircle size={20} className="text-[#4a9b5c] mr-2" />
                               ) : (
-                                <AlertCircle size={16} className="text-red-500 mr-2" />
+                                <AlertCircle size={20} className="text-[#e57373] mr-2" />
                               )}
-                              <h4 className="font-medium">{item.name}</h4>
+                              <h4 className="text-lg text-[#4a4a4a]">{item.name}</h4>
                             </div>
-                            <div className="text-sm text-eco-dark/70 mt-1">
-                              {item.category} · ${item.price.toFixed(2)} · {item.carbonFootprint} kg CO₂
+                            <div className="text-[#6b7280] mt-2">
+                              {item.category} · ${item.price.toFixed(2)} · {item.carbonFootprint} kg CO<sub>2</sub>
                             </div>
                           </div>
                           
-                          <div className={`text-sm ${item.isEcoFriendly ? 'text-eco-green' : 'text-red-500'}`}>
+                          <div className={`${
+                            item.isEcoFriendly 
+                              ? 'text-[#4a9b5c]' 
+                              : 'text-[#e57373]'
+                          }`}>
                             {item.isEcoFriendly ? 'Eco-friendly' : 'Non-eco'}
                           </div>
                         </div>
                         
                         {item.alternativeSuggestion && (
-                          <div className="mt-2 text-sm bg-white p-2 rounded border border-yellow-200">
+                          <div className="mt-4 text-[#4a4a4a] border border-[#f0d68a] bg-[#fffbeb] p-4 rounded-lg">
                             <span className="font-medium">Suggestion:</span> {item.alternativeSuggestion}
                           </div>
                         )}
@@ -407,17 +404,26 @@ const Receiptify = () => {
                 <div className="flex justify-between">
                   <button
                     onClick={handleReset}
-                    className="px-4 py-2 bg-eco-cream text-eco-dark rounded-lg hover:bg-eco-cream/80 transition-colors"
+                    className="px-4 py-2 bg-[#f9f8f3] text-[#4a4a4a] rounded-lg hover:bg-[#f0efe8] transition-colors"
                   >
                     Scan Another Receipt
                   </button>
                   
-                  <button
-                    onClick={() => toast.success('Receipt details saved!')}
-                    className="px-4 py-2 bg-eco-green text-white rounded-lg hover:bg-eco-green/90 transition-colors"
-                  >
-                    Save Analysis
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={debugAnalysis}
+                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/80 transition-colors"
+                    >
+                      Debug
+                    </button>
+                    
+                    <button
+                      onClick={() => toast.success('Receipt details saved!')}
+                      className="px-4 py-2 bg-[#4a9b5c] text-white rounded-lg hover:bg-[#4a9b5c]/90 transition-colors"
+                    >
+                      Save Analysis
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}

@@ -1,58 +1,48 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-interface ErrorBoundaryProps {
+interface Props {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
+class ErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true, error };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return {
-      hasError: true,
-      error
-    };
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error:', error, errorInfo);
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-  }
-
-  render(): ReactNode {
+  public render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-      
-      return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <h2 className="text-xl font-semibold text-red-700 mb-2">Something went wrong</h2>
-            <p className="text-gray-700 mb-4">
-              The application encountered an error. Please refresh the page or try again later.
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              {this.state.error?.message}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              Refresh Page
-            </button>
-          </div>
+      // You can render any custom fallback UI
+      return this.props.fallback || (
+        <div className="p-6 bg-red-50 rounded-lg max-w-2xl mx-auto my-8 text-red-800">
+          <h2 className="text-xl font-bold mb-4">Something went wrong</h2>
+          <p className="mb-4">The application encountered an error. Please try refreshing the page.</p>
+          {this.state.error && (
+            <div className="bg-white p-4 rounded border border-red-200 overflow-auto">
+              <p className="font-mono text-sm text-red-700">{this.state.error.toString()}</p>
+            </div>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Refresh Page
+          </button>
         </div>
       );
     }

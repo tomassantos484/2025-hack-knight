@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { Wallet, Leaf, Gift, TreePine, Waves, Badge, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { getBudsBalance, getTransactions, spendBuds, Transaction as WalletTransaction } from '../services/walletService';
 
 // Interface for redemption items
 interface RedemptionItem {
@@ -16,27 +17,43 @@ interface RedemptionItem {
   icon: React.ReactNode;
 }
 
-// Interface for transaction history
-interface Transaction {
-  id: number;
-  type: 'earned' | 'spent';
-  amount: number;
-  description: string;
-  date: string;
-}
-
 const EcoWallet = () => {
   const { isSignedIn } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
   
-  // State for Buds balance - for new users, start with 0
-  const [budsBalance, setBudsBalance] = useState(0);
+  // State for Buds balance
+  const [budsBalance, setBudsBalance] = useState<number>(0);
   
   // State for selected category
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'badge' | 'merch' | 'donation'>('all');
   
   // State for showing transaction history
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  
+  // State for transaction history
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  
+  // Load user data on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (isSignedIn && user) {
+        try {
+          // Get user's Buds balance
+          const balance = await getBudsBalance(user.id);
+          setBudsBalance(balance);
+          
+          // Get user's transaction history
+          const txHistory = await getTransactions(user.id);
+          setTransactions(txHistory);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          toast.error('Failed to load your Buds balance and transaction history.');
+        }
+      }
+    };
+    
+    loadUserData();
+  }, [isSignedIn, user]);
   
   // Redemption items
   const redemptionItems: RedemptionItem[] = [
@@ -87,36 +104,37 @@ const EcoWallet = () => {
     }
   ];
   
-  // Transaction history - empty for new users
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  
   // Filter redemption items by category
   const filteredItems = selectedCategory === 'all' 
     ? redemptionItems 
     : redemptionItems.filter(item => item.category === selectedCategory);
   
   // Handle redemption
-  const handleRedeem = (item: RedemptionItem) => {
-    if (budsBalance >= item.budsCost) {
-      // Update balance
-      setBudsBalance(prev => prev - item.budsCost);
+  const handleRedeem = async (item: RedemptionItem) => {
+    if (!isSignedIn || !user) {
+      toast.error('You must be signed in to redeem items.');
+      return;
+    }
+    
+    try {
+      // Spend Buds using our wallet service
+      const success = await spendBuds(
+        user.id,
+        item.budsCost,
+        `Redeemed: ${item.name}`
+      );
       
-      // Add transaction
-      const newTransaction: Transaction = {
-        id: Date.now(),
-        type: 'spent',
-        amount: item.budsCost,
-        description: `Redeemed: ${item.name}`,
-        date: new Date().toLocaleDateString()
-      };
-      
-      setTransactions(prev => [newTransaction, ...prev]);
-      
-      // Show success message
-      toast.success(`Successfully redeemed ${item.name}!`);
-    } else {
-      // Show error message
-      toast.error(`Not enough Buds to redeem ${item.name}`);
+      if (success) {
+        // Update local state
+        setBudsBalance(prev => prev - item.budsCost);
+        
+        // Refresh transaction history
+        const updatedTransactions = await getTransactions(user.id);
+        setTransactions(updatedTransactions);
+      }
+    } catch (error) {
+      console.error('Error redeeming item:', error);
+      toast.error('Failed to redeem item. Please try again.');
     }
   };
   
@@ -124,6 +142,29 @@ const EcoWallet = () => {
   const handleConnectBank = () => {
     toast.success('Bank connection feature coming soon!');
   };
+  
+  // Get score color
+  const getScoreColor = (score: number) => {
+    if (score < 30) return 'text-red-500';
+    if (score < 60) return 'text-yellow-500';
+    return 'text-eco-green';
+  };
+  
+  // Routes to earn more Buds
+  const budEarningActions = [
+    {
+      name: 'Scan Receipts',
+      description: 'Upload receipts for eco-friendly purchases',
+      icon: <Receipt size={24} className="text-eco-green" />,
+      path: '/receiptify'
+    },
+    {
+      name: 'Scan Trash',
+      description: 'Properly dispose of waste items',
+      icon: <Camera size={24} className="text-eco-green" />,
+      path: '/trash-scanner'
+    }
+  ];
   
   return (
     <DashboardLayout>
@@ -222,6 +263,32 @@ const EcoWallet = () => {
           </motion.div>
         )}
         
+        {/* Ways to Earn Buds */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8 bg-white rounded-xl p-6 eco-shadow"
+        >
+          <h2 className="text-xl font-medium mb-4">Ways to Earn Buds</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {budEarningActions.map((action, index) => (
+              <a
+                key={index}
+                href={action.path}
+                className="p-4 bg-eco-cream hover:bg-eco-green/10 rounded-lg flex items-start transition-colors"
+              >
+                <div className="mr-4 mt-1">{action.icon}</div>
+                <div>
+                  <h3 className="font-medium">{action.name}</h3>
+                  <p className="text-sm text-eco-dark/70">{action.description}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </motion.div>
+        
         {/* Redemption Options */}
         <div className="mb-6">
           <h2 className="text-xl font-medium mb-4">Redeem Your Buds</h2>
@@ -258,7 +325,7 @@ const EcoWallet = () => {
               }`}
             >
               <ShoppingBag size={16} className="mr-2" />
-              Eco Merchandise
+              Eco Merch
             </button>
             <button 
               onClick={() => setSelectedCategory('donation')}
@@ -274,90 +341,46 @@ const EcoWallet = () => {
           </div>
           
           {/* Redemption Items Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map(item => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: item.id * 0.1 }}
+                whileHover={{ y: -5 }}
                 className="bg-white rounded-xl overflow-hidden eco-shadow"
               >
-                <div className="h-40 bg-eco-cream flex items-center justify-center">
-                  <div className="w-20 h-20 flex items-center justify-center">
+                <div className="aspect-video bg-eco-light/30 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-eco-green/10 flex items-center justify-center">
                     {item.icon}
                   </div>
                 </div>
                 
                 <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{item.name}</h3>
-                    <span className="bg-eco-green/10 text-eco-green text-xs px-2 py-1 rounded-full flex items-center">
-                      <Leaf size={12} className="mr-1" />
-                      {item.budsCost} Buds
-                    </span>
-                  </div>
-                  
+                  <h3 className="font-medium mb-1">{item.name}</h3>
                   <p className="text-sm text-eco-dark/70 mb-4">{item.description}</p>
                   
-                  <button
-                    onClick={() => handleRedeem(item)}
-                    disabled={budsBalance < item.budsCost}
-                    className={`w-full py-2 rounded-lg flex items-center justify-center ${
-                      budsBalance >= item.budsCost
-                        ? 'bg-eco-green text-white hover:bg-eco-green/90'
-                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {budsBalance >= item.budsCost ? 'Redeem Now' : 'Not Enough Buds'}
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm font-medium text-eco-green">
+                      <Leaf size={16} className="mr-1" />
+                      {item.budsCost} Buds
+                    </div>
+                    
+                    <button
+                      onClick={() => handleRedeem(item)}
+                      disabled={budsBalance < item.budsCost}
+                      className={`px-3 py-1.5 rounded-lg text-sm flex items-center ${
+                        budsBalance >= item.budsCost
+                          ? 'bg-eco-green text-white hover:bg-eco-green/90'
+                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
-        
-        {/* How to Earn More Buds */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-eco-green/10 rounded-xl p-6 mb-8"
-        >
-          <h2 className="text-xl font-medium mb-4">How to Earn More Buds</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg flex items-start">
-              <div className="bg-eco-green/10 p-2 rounded-lg mr-3">
-                <Plus size={20} className="text-eco-green" />
-              </div>
-              <div>
-                <h3 className="font-medium text-sm mb-1">Log Eco Actions</h3>
-                <p className="text-xs text-eco-dark/70">Each eco-friendly action earns you Buds</p>
-              </div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg flex items-start">
-              <div className="bg-eco-green/10 p-2 rounded-lg mr-3">
-                <Camera size={20} className="text-eco-green" />
-              </div>
-              <div>
-                <h3 className="font-medium text-sm mb-1">Use Trash Scanner</h3>
-                <p className="text-xs text-eco-dark/70">Properly dispose of waste to earn Buds</p>
-              </div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg flex items-start">
-              <div className="bg-eco-green/10 p-2 rounded-lg mr-3">
-                <Receipt size={20} className="text-eco-green" />
-              </div>
-              <div>
-                <h3 className="font-medium text-sm mb-1">Scan Receipts</h3>
-                <p className="text-xs text-eco-dark/70">Earn Buds for eco-friendly purchases</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </DashboardLayout>
   );
