@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, ArrowUpRight, Leaf } from 'lucide-react';
@@ -12,7 +11,8 @@ interface ActionCardProps {
   onClick?: () => void;
 }
 
-const ActionCard = ({ 
+// Using React.memo to prevent unnecessary re-renders
+const ActionCard = React.memo(({ 
   title, 
   impact, 
   category, 
@@ -63,6 +63,9 @@ const ActionCard = ({
       </div>
     </motion.div>
   );
-};
+});
+
+// Add display name for better debugging
+ActionCard.displayName = 'ActionCard';
 
 export default ActionCard;

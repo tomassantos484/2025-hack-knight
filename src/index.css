@@ -95,7 +95,8 @@ html {
   }
 }
 
-/* Animation delays for staggered entrances */
+/* Remove animation delays in favor of framer-motion animations */
+/* These classes are kept for backward compatibility but should be phased out */
 .delay-100 {
   animation-delay: 100ms;
 }

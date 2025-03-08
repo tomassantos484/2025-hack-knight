@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useReducer, useEffect, useCallback, useMemo } from "react"
 
 import type {
   ToastActionElement,
@@ -53,9 +54,12 @@ interface State {
   toasts: ToasterToast[]
 }
 
+const initialState: State = { toasts: [] }
+
+// Store timeouts in a ref so they persist between renders
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, dispatch: React.Dispatch<Action>) => {
   if (toastTimeouts.has(toastId)) {
     return
   }
@@ -88,22 +92,10 @@ export const reducer = (state: State, action: Action): State => {
       }
 
     case "DISMISS_TOAST": {
-      const { toastId } = action
-
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
-      if (toastId) {
-        addToRemoveQueue(toastId)
-      } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id)
-        })
-      }
-
       return {
         ...state,
         toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
+          t.id === action.toastId || action.toastId === undefined
             ? {
                 ...t,
                 open: false,
@@ -126,66 +118,85 @@ export const reducer = (state: State, action: Action): State => {
   }
 }
 
-const listeners: Array<(state: State) => void> = []
-
-let memoryState: State = { toasts: [] }
-
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
-  })
-}
-
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
-  const id = genId()
-
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
-  dispatch({
-    type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
-      },
-    },
-  })
-
-  return {
-    id: id,
-    dismiss,
-    update,
-  }
-}
-
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+  const [state, dispatch] = useReducer(reducer, initialState)
 
-  React.useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
+  // Handle side effects for dismiss toast
+  useEffect(() => {
+    state.toasts.forEach((toast) => {
+      if (toast.open === false && !toastTimeouts.has(toast.id)) {
+        addToRemoveQueue(toast.id, dispatch)
       }
-    }
-  }, [state])
+    })
+  }, [state.toasts])
 
-  return {
-    ...state,
-    toast,
-    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
-  }
+  const toast = useCallback(
+    (props: Toast) => {
+      const id = genId()
+
+      const update = (props: ToasterToast) =>
+        dispatch({
+          type: "UPDATE_TOAST",
+          toast: { ...props, id },
+        })
+      
+      const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+
+      dispatch({
+        type: "ADD_TOAST",
+        toast: {
+          ...props,
+          id,
+          open: true,
+          onOpenChange: (open) => {
+            if (!open) dismiss()
+          },
+        },
+      })
+
+      return {
+        id,
+        dismiss,
+        update,
+      }
+    },
+    [dispatch]
+  )
+
+  const dismiss = useCallback(
+    (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    [dispatch]
+  )
+
+  return useMemo(
+    () => ({
+      ...state,
+      toast,
+      dismiss,
+    }),
+    [state, toast, dismiss]
+  )
 }
 
-export { useToast, toast }
+export { useToast }
+
+// Export a standalone toast function for convenience
+export const toast = (props: Toast) => {
+  const id = genId()
+  
+  // This is a simplified version that doesn't update the UI
+  // It's meant for use outside of React components
+  // For full functionality, use the useToast hook
+  
+  return {
+    id,
+    dismiss: () => {
+      // No-op in standalone version
+    },
+    update: () => {
+      // No-op in standalone version
+    }
+  }
+}
