@@ -159,9 +159,9 @@ const Profile = () => {
     try {
       await signOut();
       toast.success('Signed out successfully');
-      // Force a full page reload to reset all state
+      // Use React Router's navigate function instead of forcing a page reload
       sessionStorage.setItem('justSignedOut', 'true');
-      window.location.href = '/sign-in';
+      navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out. Please try again.');

@@ -56,8 +56,8 @@ const Navbar = () => {
       await signOut();
       // Show success toast
       toast.success('Signed out successfully');
-      // Force a full page reload to reset all state
-      window.location.href = '/sign-in';
+      // Use React Router's navigate function instead of forcing a page reload
+      navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out. Please try again.');

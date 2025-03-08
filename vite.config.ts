@@ -1,7 +1,8 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { writeFileSync } from "fs";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -19,6 +20,23 @@ export default defineConfig(({ mode }) => {
       // Temporarily commenting out the lovable-tagger plugin to troubleshoot WebSocket issues
       // mode === 'development' &&
       // componentTagger(),
+      
+      // Custom plugin to build and copy the service worker
+      {
+        name: 'build-service-worker',
+        apply: 'build' as const,
+        closeBundle() {
+          // Import the service worker code
+          const serviceWorkerCode = `
+            // Service worker built by Vite
+            importScripts('/assets/serviceWorker.js');
+          `;
+          
+          // Write the service worker to the dist folder
+          writeFileSync(path.resolve(__dirname, 'dist/serviceWorker.js'), serviceWorkerCode);
+          console.log('Service worker built and copied to dist folder');
+        }
+      }
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -42,7 +60,16 @@ export default defineConfig(({ mode }) => {
       },
       // Configure code splitting
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          serviceWorker: path.resolve(__dirname, 'src/serviceWorker.ts'),
+        },
         output: {
+          entryFileNames: (chunkInfo) => {
+            return chunkInfo.name === 'serviceWorker' 
+              ? 'assets/[name].js' 
+              : 'assets/[name]-[hash].js';
+          },
           manualChunks: {
             // Split vendor code into separate chunks
             'vendor-react': ['react', 'react-dom', 'react-router-dom'],
