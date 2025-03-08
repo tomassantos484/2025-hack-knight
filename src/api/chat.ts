@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { getMockResponse } from './mockResponses';
 
 // Initialize the Gemini API with the API key from environment variables
 const GEMINI_API_KEY = import.meta.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
@@ -24,19 +25,30 @@ If asked about topics unrelated to sustainability or the environment, politely r
 Important: Never claim to have capabilities you don't have, like accessing the user's personal data or controlling their device.
 `;
 
+// Flag to determine if we should use mock responses
+// Set to false to try using the Gemini API first
+const USE_MOCK_RESPONSES = false;
+
 export async function handleChatRequest(message: string, history: { role: string; content: string }[]) {
   try {
     console.log('Gemini API Key:', GEMINI_API_KEY ? 'Present' : 'Missing');
     
     if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API key is missing');
+      console.log('API key missing, using mock response');
+      return { response: getMockResponse(message) };
     }
     
-    // For testing - return a mock response if the API is not working
-    if (process.env.NODE_ENV === 'development' && !GEMINI_API_KEY.startsWith('AI')) {
-      console.log('Using mock response for development');
+    // Use mock responses if flag is set
+    if (USE_MOCK_RESPONSES) {
+      console.log('Using mock response system');
+      return { response: getMockResponse(message) };
+    }
+    
+    // For testing - return a mock response if we're in development and having API issues
+    if (process.env.NODE_ENV === 'development' && message.includes('test fallback')) {
+      console.log('Using mock response for testing');
       return { 
-        response: `This is a mock response for development. In production, this would be a real response from the Gemini API about: "${message}"` 
+        response: `This is a mock response for testing. In production, this would be a real response from the Gemini API about: "${message}"` 
       };
     }
     
@@ -113,14 +125,9 @@ export async function handleChatRequest(message: string, history: { role: string
     } catch (apiError) {
       console.error('Error calling Gemini API:', apiError);
       
-      // Provide a fallback response for common errors
-      if (apiError.message && apiError.message.includes('fetch')) {
-        return { 
-          response: "I'm having trouble connecting to my knowledge base right now. Let me provide some general information about sustainability instead.\n\nSustainability involves making choices that balance environmental health, social well-being, and economic prosperity. Some simple ways to be more eco-friendly include reducing single-use plastics, conserving water and energy, recycling properly, and supporting sustainable businesses.\n\nIs there a specific sustainability topic you'd like to learn more about?" 
-        };
-      }
-      
-      throw apiError;
+      // Provide a fallback response using our mock system
+      console.log('API error, falling back to mock response');
+      return { response: getMockResponse(message) };
     }
   } catch (error) {
     console.error('Error in handleChatRequest:', error);

@@ -72,12 +72,8 @@ const EcoChatbot = () => {
           content: msg.content,
         }));
       
-      // Call the Gemini API directly
+      // Call the API
       const result = await handleChatRequest(promptText, messageHistory);
-      
-      if (result.error) {
-        throw new Error(result.response);
-      }
       
       // Add assistant message
       const assistantMessage: Message = {
@@ -91,25 +87,15 @@ const EcoChatbot = () => {
     } catch (error) {
       console.error('Error in chat flow:', error);
       
-      // Default error message
-      let errorMessage = "I'm having trouble connecting right now. Here are some general sustainability tips:\n\n" +
-        "• Reduce single-use plastics\n" +
-        "• Conserve water and energy\n" +
-        "• Recycle properly\n" +
-        "• Support sustainable businesses\n\n" +
-        "Please try again later.";
-      
       // Only show technical error details in development
-      if (process.env.NODE_ENV === 'development' && error instanceof Error) {
-        errorMessage += `\n\nDevelopment error details: ${error.message}`;
+      if (process.env.NODE_ENV === 'development') {
+        toast.error('Error in chat flow. Check console for details.');
       }
       
-      toast.error('Connection issue. Showing general information instead.');
-      
-      // Add error message
+      // Add a generic error message
       const errorAssistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: errorMessage,
+        content: "I'm sorry, I couldn't process that request. Let's try a different question about sustainability or EcoVision features.",
         role: 'assistant',
         timestamp: new Date(),
       };
