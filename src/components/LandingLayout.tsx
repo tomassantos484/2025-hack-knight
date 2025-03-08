@@ -1,7 +1,9 @@
 import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
-import { Leaf, Github, Twitter, Heart, ArrowRight } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Leaf, Github, Twitter, Heart, ArrowRight, User, LogOut } from 'lucide-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
 
 interface LandingLayoutProps {
   children: ReactNode;
@@ -10,6 +12,9 @@ interface LandingLayoutProps {
 const LandingLayout = ({ children }: LandingLayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isSignedIn, signOut } = useAuth();
+  const { user, isLoaded: userIsLoaded } = useUser();
   
   // Use useLayoutEffect to ensure scroll position is set before browser paint
   useLayoutEffect(() => {
@@ -41,6 +46,19 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Show success toast
+      toast.success('Signed out successfully');
+      // Force a full page reload to reset all state
+      window.location.href = '/sign-in';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out. Please try again.');
     }
   };
 
@@ -91,15 +109,51 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
           >
             About Us
           </Link>
-          <Link to="/sign-in">
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
-            >
-              <span>Sign In</span>
-            </motion.button>
-          </Link>
+          
+          {isSignedIn ? (
+            <div className="flex items-center space-x-4">
+              <div className={`text-sm ${
+                scrolled ? 'text-gray-800' : 'text-eco-dark'
+              }`}>
+                {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
+                onClick={() => navigate('/profile')}
+              >
+                {userIsLoaded && user?.imageUrl ? (
+                  <img 
+                    src={user.imageUrl} 
+                    alt="Profile" 
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <User size={18} className="text-eco-dark" />
+                )}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <LogOut size={18} className="text-eco-dark" />
+              </motion.button>
+            </div>
+          ) : (
+            <Link to="/sign-in">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
+              >
+                <span>Sign In</span>
+              </motion.button>
+            </Link>
+          )}
         </div>
         
         {/* Mobile menu button */}
@@ -133,7 +187,9 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl font-medium text-eco-dark mb-6"
             >
-              Ready to start your sustainability journey?
+              {isSignedIn 
+                ? "Continue your sustainability journey" 
+                : "Ready to start your sustainability journey?"}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -142,8 +198,9 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               transition={{ delay: 0.1 }}
               className="text-lg text-eco-dark/80 mb-8"
             >
-              Join thousands of eco-conscious individuals making a difference for our planet.
-              Track your actions, measure your impact, and be part of the solution.
+              {isSignedIn
+                ? "Track your actions, measure your impact, and continue making a difference for our planet."
+                : "Join thousands of eco-conscious individuals making a difference for our planet. Track your actions, measure your impact, and be part of the solution."}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -151,16 +208,29 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Link to="/sign-up">
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-eco-green text-white px-8 py-3 rounded-full text-lg font-medium flex items-center mx-auto"
-                >
-                  <span>Get Started Now</span>
-                  <ArrowRight size={18} className="ml-2" />
-                </motion.button>
-              </Link>
+              {isSignedIn ? (
+                <Link to="/actions">
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-eco-green text-white px-8 py-3 rounded-full text-lg font-medium flex items-center mx-auto"
+                  >
+                    <span>go to dashboard</span>
+                    <ArrowRight size={18} className="ml-2" />
+                  </motion.button>
+                </Link>
+              ) : (
+                <Link to="/sign-up">
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-eco-green text-white px-8 py-3 rounded-full text-lg font-medium flex items-center mx-auto"
+                  >
+                    <span>get started now</span>
+                    <ArrowRight size={18} className="ml-2" />
+                  </motion.button>
+                </Link>
+              )}
             </motion.div>
           </div>
         </div>
@@ -219,16 +289,41 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-800">Account</h4>
               <ul className="space-y-2">
-                <li>
-                  <Link to="/sign-in" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Sign In
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/sign-up" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Sign Up
-                  </Link>
-                </li>
+                {isSignedIn ? (
+                  <>
+                    <li>
+                      <Link to="/profile" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                        Profile
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                        Dashboard
+                      </Link>
+                    </li>
+                    <li>
+                      <button 
+                        onClick={handleSignOut}
+                        className="text-sm text-gray-600 hover:text-eco-green transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link to="/sign-in" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                        Sign In
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/sign-up" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                        Sign Up
+                      </Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
             

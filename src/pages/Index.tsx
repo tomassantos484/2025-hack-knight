@@ -5,6 +5,20 @@ import LandingLayout from '../components/LandingLayout';
 import { ArrowRight, Leaf, Calendar, Upload, BarChart3, Globe, Lightbulb, LineChart, Camera, PieChart, TreePine, Wallet, Receipt } from 'lucide-react';
 
 const Index = () => {
+  // Function to handle smooth scrolling
+  const scrollToSection = (sectionId: string) => {
+    // Add a small delay for a more natural feel
+    setTimeout(() => {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 50);
+  };
+
   return (
     <LandingLayout>
       {/* Hero Section - Full Screen Height */}
@@ -69,16 +83,15 @@ const Index = () => {
                 <ArrowRight size={16} className="ml-2" />
               </motion.button>
             </Link>
-            <a href="#how-it-works">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-eco-cream border border-eco-green/20 text-eco-dark px-6 py-3 rounded-full flex items-center"
-              >
-                <span>learn more</span>
-                <ArrowRight size={16} className="ml-2" />
-              </motion.button>
-            </a>
+            <motion.button 
+              onClick={() => scrollToSection('how-it-works')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-eco-cream border border-eco-green/20 text-eco-dark px-6 py-3 rounded-full flex items-center"
+            >
+              <span>learn more</span>
+              <ArrowRight size={16} className="ml-2" />
+            </motion.button>
           </motion.div>
           
           {/* Scroll indicator */}
@@ -91,7 +104,8 @@ const Index = () => {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center cursor-pointer"
+              onClick={() => scrollToSection('how-it-works')}
             >
               <span className="text-xs text-eco-dark/60 mb-2">Scroll to explore</span>
               <div className="w-6 h-10 border-2 border-eco-dark/30 rounded-full flex justify-center">
@@ -149,11 +163,11 @@ const Index = () => {
               className="flex flex-col items-center text-center p-6"
             >
               <div className="w-16 h-16 flex items-center justify-center mb-6">
-                <Upload size={42} className="text-eco-green" />
+                <Camera size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">scan trash</h3>
-              <p className="text-eco-dark/80 leading-relaxed">
-                upload photos of items to learn how to dispose of them properly
+              <h3 className="text-xl font-medium text-eco-dark mb-3">Trash Scanner</h3>
+              <p className="text-eco-dark/80 leading-relaxed mb-4">
+                Upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
               </p>
             </motion.div>
 
@@ -174,6 +188,26 @@ const Index = () => {
               </p>
             </motion.div>
           </div>
+          
+          {/* Learn More Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="flex justify-center mt-12"
+          >
+            <Link to="/how-it-works">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-6 py-3 rounded-full flex items-center"
+              >
+                <span>learn more</span>
+                <ArrowRight size={16} className="ml-2" />
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
@@ -241,7 +275,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-medium text-eco-dark mb-3">EcoWallet</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Earn Buds for eco-friendly actions and spend them on digital badges, eco-friendly merchandise, or donations to environmental causes.
+                Earn "Buds" for eco-friendly actions and redeem them for digital badges, eco-friendly merchandise, or donations.
               </p>
             </motion.div>
 
@@ -262,10 +296,30 @@ const Index = () => {
               </p>
             </motion.div>
           </div>
+          
+          {/* Learn More Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="flex justify-center mt-12"
+          >
+            <Link to="/features">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-6 py-3 rounded-full flex items-center"
+              >
+                <span>explore all features</span>
+                <ArrowRight size={16} className="ml-2" />
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      {/* Track Your Impact Section */}
+      {/* Track Your Impact Section - Commented Out
       <section className="py-24 bg-white w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <motion.div 
@@ -283,7 +337,7 @@ const Index = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-8">
-              {/* Log Eco Actions */}
+              
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -302,7 +356,7 @@ const Index = () => {
                 </div>
               </motion.div>
 
-              {/* Trash Scanner */}
+              
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -321,7 +375,7 @@ const Index = () => {
                 </div>
               </motion.div>
 
-              {/* Visual Analytics */}
+              
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -340,7 +394,7 @@ const Index = () => {
                 </div>
               </motion.div>
 
-              {/* Eco Challenges */}
+              
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -360,7 +414,7 @@ const Index = () => {
               </motion.div>
             </div>
 
-            {/* Right side image */}
+            
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -385,11 +439,12 @@ const Index = () => {
           </div>
         </div>
       </section>
+      */}
 
       {/* About Us Section */}
       <section 
         id="about"
-        className="py-24 pattern-bg w-full"
+        className="py-24 bg-white w-full"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <motion.div 
@@ -443,13 +498,16 @@ const Index = () => {
               </p>
               
               <div className="pt-4">
-                <Link 
-                  to="/about"
-                  className="inline-flex items-center space-x-2 text-eco-green font-medium hover:underline group"
-                >
-                  <span>Learn more about our team</span>
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1 ml-2" />
-                </Link>
+                <Link to="/features">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-6 py-3 rounded-full flex items-center"
+              >
+                <span> learn more about our team</span>
+                <ArrowRight size={16} className="ml-2" />
+              </motion.button>
+            </Link>
               </div>
             </motion.div>
           </motion.div>

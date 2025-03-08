@@ -179,6 +179,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link to="/actions" className="text-sm text-gray-500 hover:text-eco-green">
                 Dashboard
               </Link>
+              <Link to="/" className="text-sm text-gray-500 hover:text-eco-green">Home</Link>
               <Link to="/how-it-works" className="text-sm text-gray-500 hover:text-eco-green">
                 How It Works
               </Link>

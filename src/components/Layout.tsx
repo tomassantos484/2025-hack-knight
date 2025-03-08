@@ -1,7 +1,9 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
-import { Leaf, Github, Twitter, Heart } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Leaf, Github, Twitter, Heart, User, LogOut } from 'lucide-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,6 +12,19 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isSignedIn, signOut } = useAuth();
+  const { user, isLoaded: userIsLoaded } = useUser();
+
+  // Use useLayoutEffect to ensure scroll position is set before browser paint
+  useLayoutEffect(() => {
+    // Force scroll to top immediately
+    window.scrollTo(0, 0);
+    
+    // Also set body scroll position
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +38,19 @@ const Layout = ({ children }: LayoutProps) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Show success toast
+      toast.success('Signed out successfully');
+      // Force a full page reload to reset all state
+      window.location.href = '/sign-in';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen pattern-bg flex flex-col">
@@ -51,15 +79,49 @@ const Layout = ({ children }: LayoutProps) => {
           <Link to="/about" className="text-gray-800 hover:text-eco-green transition-colors">
             About Us
           </Link>
-          <Link to="/sign-in">
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
-            >
-              <span>Sign In</span>
-            </motion.button>
-          </Link>
+          
+          {isSignedIn ? (
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-800">
+                {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
+                onClick={() => navigate('/profile')}
+              >
+                {userIsLoaded && user?.imageUrl ? (
+                  <img 
+                    src={user.imageUrl} 
+                    alt="Profile" 
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <User size={18} className="text-eco-dark" />
+                )}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <LogOut size={18} className="text-eco-dark" />
+              </motion.button>
+            </div>
+          ) : (
+            <Link to="/sign-in">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
+              >
+                <span>Sign In</span>
+              </motion.button>
+            </Link>
+          )}
         </div>
       </nav>
       
