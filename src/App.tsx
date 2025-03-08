@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AnimatePresence } from "framer-motion";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
-import ErrorBoundary from './components/ErrorBoundary';
+import { useEffect, Suspense } from "react";
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Debug from './components/Debug';
 import { testDatabaseConnection } from './services/receiptProcessingService';
 
