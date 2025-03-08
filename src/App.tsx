@@ -6,13 +6,35 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AnimatePresence } from "framer-motion";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
-import { useEffect, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import ErrorBoundary from './components/ErrorBoundary';
 import Debug from './components/Debug';
 import { testDatabaseConnection } from './services/receiptProcessingService';
 
+// Dynamically import page components
+const Index = lazy(() => import("./pages/Index"));
+const TrashScanner = lazy(() => import("./pages/TrashScanner"));
+const Actions = lazy(() => import("./pages/Actions"));
+const Profile = lazy(() => import("./pages/Profile"));
+const About = lazy(() => import("./pages/About"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const SignIn = lazy(() => import("./pages/SignIn"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const EcoWallet = lazy(() => import("./pages/EcoWallet"));
+const Receiptify = lazy(() => import("./pages/Receiptify"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const Features = lazy(() => import("./pages/Features"));
+
 // Get the publishable key from environment variables
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+// Loading component for suspense fallback
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="w-12 h-12 border-4 border-eco-green border-t-transparent rounded-full animate-spin"></div>
+    <p className="mt-4 text-eco-dark">Loading page...</p>
+  </div>
+);
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
