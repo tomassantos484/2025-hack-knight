@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trash Scanner API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        #imagePreview {
+            max-width: 300px;
+            max-height: 300px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trash Scanner API Test</h1>
+    
+    <h2>1. Test API Connection</h2>
+    <button id="testConnection">Test Connection</button>
+    
+    <h2>2. Test Image Classification</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <img id="imagePreview" src="" alt="Image Preview">
+    <button id="classifyImage" disabled>Classify Image</button>
+    
+    <h2>Results:</h2>
+    <div id="result">Results will appear here...</div>
+    
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:5001';
+        const resultDiv = document.getElementById('result');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const classifyButton = document.getElementById('classifyImage');
+        
+        // Test connection button
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            resultDiv.textContent = 'Testing connection...';
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${API_BASE_URL}/api/test?t=${timestamp}`);
+                const data = await response.json();
+                resultDiv.textContent = `Connection successful!\nResponse: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.textContent = `Connection failed: ${error.message}`;
+            }
+        });
+        
+        // Handle image selection
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    classifyButton.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Classify image button
+        classifyButton.addEventListener('click', async () => {
+            if (!imagePreview.src) {
+                resultDiv.textContent = 'Please select an image first.';
+                return;
+            }
+            
+            resultDiv.textContent = 'Classifying image...';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/classify-trash`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imagePreview.src
+                    })
+                });
+                
+                const data = await response.json();
+                resultDiv.textContent = `Classification result:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.textContent = `Classification failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html> 

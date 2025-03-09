@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf } from 'lucide-react';
+import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trashScanner';
 
 interface ScanResult {
   category: 'recycle' | 'compost' | 'landfill';
@@ -14,7 +15,28 @@ const TrashScanner = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Test API connection on component mount
+  useEffect(() => {
+    const checkApiConnection = async () => {
+      try {
+        const isConnected = await testApiConnection();
+        setApiConnected(isConnected);
+        if (!isConnected) {
+          setError('Could not connect to the API server. Please make sure it is running.');
+        }
+      } catch (err) {
+        console.error('Error checking API connection:', err);
+        setApiConnected(false);
+        setError('Could not connect to the API server. Please make sure it is running.');
+      }
+    };
+    
+    checkApiConnection();
+  }, []);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -48,53 +70,38 @@ const TrashScanner = () => {
     reader.readAsDataURL(file);
   };
   
-  const simulateScan = async () => {
+  const scanImage = async () => {
     if (!imagePreview) return;
     
-    setIsScanning(true);
+    // Check API connection before scanning
+    if (apiConnected === false) {
+      setError('Cannot scan image: API server is not connected. Please make sure it is running.');
+      return;
+    }
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Mock randomly selecting one of the three categories
-      const categories = ['recycle', 'compost', 'landfill'] as const;
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    setIsScanning(true);
+    setError(null);
+    
+    try {
+      console.log('Scanning image...');
       
-      const resultData: Record<typeof randomCategory, ScanResult> = {
-        recycle: {
-          category: 'recycle',
-          confidence: 89,
-          details: 'This appears to be a recyclable plastic container (type #1 PET).',
-          tips: [
-            'Rinse before recycling',
-            'Remove any non-recyclable caps or lids',
-            'Check local guidelines as recycling rules vary by location'
-          ]
-        },
-        compost: {
-          category: 'compost',
-          confidence: 93,
-          details: 'This appears to be food waste that can be composted.',
-          tips: [
-            'Add to your home compost bin or municipal compost collection',
-            'Mix with dry materials like leaves or paper',
-            'Avoid composting meat or dairy products in home systems'
-          ]
-        },
-        landfill: {
-          category: 'landfill',
-          confidence: 81,
-          details: 'This item appears to be non-recyclable mixed materials.',
-          tips: [
-            'Consider alternatives with less packaging next time',
-            'Check if the manufacturer has a take-back program',
-            'Search for TerraCycle programs that might accept this waste'
-          ]
-        }
-      };
+      // Call the API with the image data
+      const result = await classifyTrashImage(imagePreview);
+      console.log('Scan result:', result);
       
-      setScanResult(resultData[randomCategory]);
+      // Convert the API result to our ScanResult type
+      setScanResult({
+        category: result.category as 'recycle' | 'compost' | 'landfill',
+        confidence: result.confidence,
+        details: result.details,
+        tips: result.tips
+      });
+    } catch (err) {
+      console.error('Error scanning image:', err);
+      setError('Failed to analyze the image. Please try again.');
+    } finally {
       setIsScanning(false);
-    }, 2000);
+    }
   };
   
   const handleReset = () => {
@@ -227,7 +234,7 @@ const TrashScanner = () => {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={simulateScan}
+                        onClick={scanImage}
                         className="px-3 py-1.5 bg-eco-green text-white text-xs rounded-lg hover:bg-eco-green/90 transition-colors"
                       >
                         Scan Image
@@ -242,6 +249,13 @@ const TrashScanner = () => {
               <div className="flex items-center justify-center py-4">
                 <Loader2 size={24} className="animate-spin text-eco-green mr-2" />
                 <p className="text-sm">analyzing your item...</p>
+              </div>
+            )}
+            
+            {error && (
+              <div className="flex items-center justify-center py-4 text-red-500">
+                <AlertCircle size={20} className="mr-2" />
+                <p className="text-sm">{error}</p>
               </div>
             )}
           </div>

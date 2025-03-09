@@ -17,6 +17,8 @@
 /.next/
 /out/
 
+/.venv
+
 # production
 /build
 /dist

@@ -1,0 +1,59 @@
+<!-- Trash Scanner Component -->
+<div class="trash-scanner-container">
+    <div class="upload-container" id="trashScannerDropArea">
+        <p>Upload an image of trash to classify</p>
+        <input type="file" id="trashScannerFileInput" class="file-input" accept="image/*">
+        <button class="upload-button" id="trashScannerUploadButton">Choose Image</button>
+        <p>or drag and drop an image here</p>
+        <img id="trashScannerImagePreview" class="image-preview" src="" alt="Image Preview">
+    </div>
+    
+    <button id="trashScannerClassifyButton" class="classify-button" disabled>Classify Trash</button>
+    
+    <div class="loading" id="trashScannerLoadingIndicator">
+        <div class="loading-spinner"></div>
+        <p>Analyzing image with Gemini AI...</p>
+    </div>
+    
+    <div class="error-message" id="trashScannerErrorMessage"></div>
+    
+    <div class="result-container" id="trashScannerResultContainer">
+        <div class="result-header">
+            <div class="result-icon" id="trashScannerResultIcon">📦</div>
+            <h2 class="result-title" id="trashScannerResultTitle">Classification Result</h2>
+            <span class="result-confidence" id="trashScannerResultConfidence">Confidence: 0%</span>
+        </div>
+        <p class="result-details" id="trashScannerResultDetails"></p>
+        <div class="tips-list">
+            <h4>Tips:</h4>
+            <ul id="trashScannerTipsList"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Include the trash scanner JavaScript and initialize it -->
+<script>
+    // Initialize the trash scanner when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make sure the initTrashScanner function is available
+        if (typeof window.initTrashScanner === 'function') {
+            window.initTrashScanner({
+                dropAreaId: 'trashScannerDropArea',
+                fileInputId: 'trashScannerFileInput',
+                uploadButtonId: 'trashScannerUploadButton',
+                imagePreviewId: 'trashScannerImagePreview',
+                classifyButtonId: 'trashScannerClassifyButton',
+                loadingIndicatorId: 'trashScannerLoadingIndicator',
+                errorMessageId: 'trashScannerErrorMessage',
+                resultContainerId: 'trashScannerResultContainer',
+                resultIconId: 'trashScannerResultIcon',
+                resultTitleId: 'trashScannerResultTitle',
+                resultConfidenceId: 'trashScannerResultConfidence',
+                resultDetailsId: 'trashScannerResultDetails',
+                tipsListId: 'trashScannerTipsList'
+            });
+        } else {
+            console.error('Trash Scanner initialization function not found. Make sure to include trash-scanner.js before this script.');
+        }
+    });
+</script> 
