@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-const API_BASE_URL = 'http://127.0.0.1:5002';  // Updated to use port 5002 for the Flask server
+// Use environment variable if available, otherwise default to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5002';
+
+console.log('Using API base URL:', API_BASE_URL);
 
 // Define the response type
 export interface TrashScanResult {

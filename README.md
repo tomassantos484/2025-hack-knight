@@ -83,6 +83,7 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_key
 VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_API_BASE_URL=your_api_server_url  # For production deployment
 ```
 
 ## 📱 Features in Detail
@@ -200,3 +201,23 @@ eco-action-logger-06/
 - [Radix UI](https://www.radix-ui.com/) for accessible component primitives
 - [React Query](https://tanstack.com/query/latest) for efficient data fetching
 - [Recharts](https://recharts.org/) for beautiful charts 
+
+## 🚀 Deployment
+
+### Frontend Deployment (Vercel)
+1. Push your code to a GitHub repository
+2. Connect your repository to Vercel
+3. Configure the environment variables in the Vercel dashboard
+4. Deploy your application
+
+### Backend Deployment
+For the Flask backend, you have several options:
+1. **Render**: Easy deployment with free tier available
+2. **Heroku**: Simple deployment with PostgreSQL integration
+3. **Railway**: Modern platform with easy setup
+4. **AWS/GCP/Azure**: More complex but highly scalable
+
+Important: When deploying, make sure to:
+1. Set the `VITE_API_BASE_URL` environment variable in your frontend to point to your deployed backend
+2. Configure CORS in your backend to allow requests from your frontend domain
+3. Set up your Gemini API key in your backend environment 

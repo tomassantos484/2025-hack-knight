@@ -8,15 +8,26 @@ from trash_scanner import classify_trash
 import datetime
 import json
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
+
 # Configure CORS to allow requests from your frontend application
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "https://localhost:8080", "http://localhost:5173", "https://localhost:5173"], 
+# Allow all origins in development, but restrict in production
+CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", 
+                                         "https://localhost:8080", 
+                                         "http://localhost:5173", 
+                                         "https://localhost:5173", 
+                                         "https://2025-hack-knight.vercel.app", 
+                                         "https://*.vercel.app"], 
                             "methods": ["GET", "POST", "OPTIONS"], 
                             "allow_headers": "*"}})
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO if os.environ.get('PRODUCTION') else logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # In-memory storage for scan history (in a production app, this would be a database)
@@ -32,13 +43,12 @@ def api_info():
         'status': 'ok',
         'message': 'Trash Scanner API is running',
         'endpoints': [
-            {'path': '/', 'method': 'GET', 'description': 'This help message'},
-            {'path': '/api/test', 'method': 'GET', 'description': 'Test endpoint'},
-            {'path': '/api/classify-trash', 'method': 'POST', 'description': 'Classify trash images'},
-            {'path': '/api/history', 'method': 'GET', 'description': 'Get scan history'},
-            {'path': '/api/history', 'method': 'POST', 'description': 'Add to scan history'},
-            {'path': '/api/local-recycling-info', 'method': 'GET', 'description': 'Get local recycling information'}
-        ]
+            '/api/test - Test endpoint',
+            '/api/classify-trash - Classify trash image',
+            '/api/history - Get scan history',
+            '/api/local-recycling-info - Get local recycling information'
+        ],
+        'version': '1.0.0'
     })
 
 @app.route('/api/classify-trash', methods=['POST'])
@@ -369,6 +379,13 @@ def get_local_recycling_info():
         logger.exception(f"Error retrieving local recycling information: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+# For Vercel serverless deployment
+app.debug = False
+
+# Only use this for local development
 if __name__ == '__main__':
-    # Use port 5002 for the API server
-    app.run(debug=True, port=5002) 
+    # Use the PORT environment variable provided by the hosting platform
+    port = int(os.environ.get('PORT', 5003))
+    # In production, we should not run in debug mode and should bind to 0.0.0.0
+    debug_mode = not os.environ.get('PRODUCTION', False)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode) 

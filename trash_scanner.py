@@ -10,6 +10,10 @@ import io
 from PIL import Image, ImageEnhance, ImageFilter
 import numpy as np
 import random
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,14 +24,18 @@ api_key = os.getenv("VITE_GEMINI_API_KEY")
 # Print a masked version of the API key for debugging
 if api_key:
     masked_key = api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:]
-    print(f"Loaded Gemini API key: {masked_key}")
+    logger.info(f"Loaded Gemini API key: {masked_key}")
 else:
-    print("WARNING: No Gemini API key found in environment variables!")
+    logger.warning("WARNING: No Gemini API key found in environment variables!")
+    # In production, we should fail gracefully
+    if os.environ.get('PRODUCTION'):
+        api_key = "DEMO_MODE"  # This will trigger mock responses
 
 genai.configure(api_key=api_key)
 
 # Flag to use mock response or direct API call
-USE_MOCK_RESPONSE = False  # Set to True to use mock responses instead of API
+# In production with no API key, or when explicitly set to True
+USE_MOCK_RESPONSE = os.environ.get('USE_MOCK_RESPONSE', 'False').lower() == 'true' or not api_key or api_key == "DEMO_MODE"
 
 def encode_image(image_path):
     """
