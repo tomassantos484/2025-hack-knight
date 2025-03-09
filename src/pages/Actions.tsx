@@ -29,6 +29,16 @@ type ActionFormData = {
   buds_reward?: number;
 };
 
+// Define consistent category options
+const CATEGORY_OPTIONS = {
+  transportation: "Transportation",
+  waste: "Waste Reduction",
+  food: "Food",
+  energy: "Energy",
+  water: "Water",
+  custom: "Other"
+};
+
 const Actions = () => {
   const [showForm, setShowForm] = useState(false);
   const [formAction, setFormAction] = useState<ActionFormData | null>(null);
@@ -125,6 +135,8 @@ const Actions = () => {
       
       // If we have a Supabase action ID, use that
       if (formAction?.id && typeof formAction.id === 'string') {
+        console.log('Logging existing action:', formAction.id);
+        
         const { data, error } = await logUserAction(
           user.id,
           formAction.id,
@@ -135,11 +147,14 @@ const Actions = () => {
           console.error('Error logging action:', error);
           toast.error('Failed to log action: ' + error);
         } else {
+          console.log('Successfully logged action:', data);
           toast.success('Eco action logged successfully!');
           closeForm();
         }
       } else {
         // For custom actions, use the client-side approach
+        console.log('Creating custom action:', formTitle);
+        
         const { data: newAction, error: createError } = await createCustomEcoAction(
           formTitle,
           formCategory,
@@ -153,11 +168,16 @@ const Actions = () => {
         }
         
         if (!newAction) {
+          console.error('No action data returned from createCustomEcoAction');
           toast.error('Failed to create custom action: No data returned');
           return;
         }
         
+        console.log('Successfully created custom action:', newAction);
+        
         // Now log the newly created action
+        console.log('Logging custom action:', newAction.id);
+        
         const { data, error } = await logUserAction(
           user.id,
           newAction.id,
@@ -168,6 +188,7 @@ const Actions = () => {
           console.error('Error logging custom action:', error);
           toast.error('Failed to log custom action: ' + error);
         } else {
+          console.log('Successfully logged custom action:', data);
           toast.success('Custom eco action logged successfully!');
           
           // Refresh the actions list
@@ -184,22 +205,6 @@ const Actions = () => {
     }
   };
 
-  // Group actions by category
-  const getActionsByCategory = () => {
-    if (!supabaseActions) return {};
-    
-    return supabaseActions.reduce((acc, action) => {
-      const category = action.category_id || 'other';
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(action);
-      return acc;
-    }, {} as Record<string, EcoAction[]>);
-  };
-  
-  const actionsByCategory = getActionsByCategory();
-  
   // If actions are still loading, show a loading state
   if (loadingActions) {
     return (
@@ -265,10 +270,12 @@ const Actions = () => {
           <div className="flex justify-between items-center mb-6">
             <TabsList className="bg-eco-cream">
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="transportation">Transportation</TabsTrigger>
-              <TabsTrigger value="waste">Waste</TabsTrigger>
-              <TabsTrigger value="food">Food</TabsTrigger>
-              <TabsTrigger value="energy">Energy</TabsTrigger>
+              <TabsTrigger value="transportation">{CATEGORY_OPTIONS.transportation}</TabsTrigger>
+              <TabsTrigger value="waste">{CATEGORY_OPTIONS.waste}</TabsTrigger>
+              <TabsTrigger value="food">{CATEGORY_OPTIONS.food}</TabsTrigger>
+              <TabsTrigger value="energy">{CATEGORY_OPTIONS.energy}</TabsTrigger>
+              <TabsTrigger value="water">{CATEGORY_OPTIONS.water}</TabsTrigger>
+              <TabsTrigger value="custom">{CATEGORY_OPTIONS.custom}</TabsTrigger>
             </TabsList>
             
             <motion.button
@@ -324,23 +331,33 @@ const Actions = () => {
           {/* Category tabs - show either Supabase categories or local categories */}
           {supabaseActions ? (
             // Display Supabase categories
-            Object.keys(actionsByCategory).map((category) => (
-              <TabsContent key={category} value={category === 'transportation' ? 'transportation' : 
-                                                category === 'waste' ? 'waste' : 
-                                                category === 'food' ? 'food' : 
-                                                category === 'energy' ? 'energy' : 'other'} 
-                          className="mt-0">
+            Object.keys(CATEGORY_OPTIONS).map((categoryKey) => (
+              <TabsContent key={categoryKey} value={categoryKey} className="mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {actionsByCategory[category].map((action) => (
+                  {supabaseActions
+                    .filter(action => action.category_id === categoryKey)
+                    .map((action) => (
+                      <ActionCard 
+                        key={action.id}
+                        title={action.title}
+                        impact={action.impact}
+                        category={action.category_id || 'other'}
+                        icon={<Leaf size={18} className="text-eco-dark/80" />}
+                        onClick={() => openForm(action)}
+                      />
+                    ))
+                  }
+                  
+                  {/* Add custom action card to each category */}
+                  {categoryKey === 'custom' && (
                     <ActionCard 
-                      key={action.id}
-                      title={action.title}
-                      impact={action.impact}
-                      category={action.category_id || 'other'}
-                      icon={<Leaf size={18} className="text-eco-dark/80" />}
-                      onClick={() => openForm(action)}
+                      title="Add custom action"
+                      impact="Track your impact"
+                      category={CATEGORIES.CUSTOM}
+                      icon={<PenTool size={18} className="text-eco-dark/80" />}
+                      onClick={() => openForm()}
                     />
-                  ))}
+                  )}
                 </div>
               </TabsContent>
             ))
@@ -416,12 +433,12 @@ const Actions = () => {
                     required
                   >
                     <option value="" disabled>Select a category</option>
-                    <option value="transportation">Transportation</option>
-                    <option value="waste">Waste Reduction</option>
-                    <option value="food">Food</option>
-                    <option value="energy">Energy</option>
-                    <option value="water">Water</option>
-                    <option value="custom">Other</option>
+                    <option value="transportation">{CATEGORY_OPTIONS.transportation}</option>
+                    <option value="waste">{CATEGORY_OPTIONS.waste}</option>
+                    <option value="food">{CATEGORY_OPTIONS.food}</option>
+                    <option value="energy">{CATEGORY_OPTIONS.energy}</option>
+                    <option value="water">{CATEGORY_OPTIONS.water}</option>
+                    <option value="custom">{CATEGORY_OPTIONS.custom}</option>
                   </select>
                 </div>
                 

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ActionHistory from '../components/ActionHistory';
 import { supabase } from '../services/supabaseClient';
+import { formatUuid } from '../services/ecoActionsService';
 
 const Profile = () => {
   const { signOut, isSignedIn } = useAuth();
@@ -48,11 +49,15 @@ const Profile = () => {
       try {
         setLoadingStats(true);
         
+        // Format the user ID as a UUID
+        const formattedUserId = formatUuid(user.id);
+        console.log('Formatted user ID for Supabase:', formattedUserId);
+        
         // Get user stats from Supabase
         const { data: statsData, error: statsError } = await supabase
           .from('user_stats')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', formattedUserId)
           .maybeSingle();
         
         if (statsError) {
@@ -73,7 +78,7 @@ const Profile = () => {
           const { data: actionsData, error: actionsError } = await supabase
             .from('user_actions')
             .select('*, eco_actions(co2_saved)')
-            .eq('user_id', user.id);
+            .eq('user_id', formattedUserId);
           
           if (actionsError) {
             console.error('Error fetching user actions:', actionsError);
@@ -408,7 +413,7 @@ const Profile = () => {
           
           <TabsContent value="actions" className="mt-0">
             {isSignedIn && user && (
-              <ActionHistory userId={user.id} />
+              <ActionHistory userId={formatUuid(user.id)} />
             )}
           </TabsContent>
           

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getUserActions } from '@/services/ecoActionsService';
+import { getUserActions, formatUuid } from '@/services/ecoActionsService';
 import { UserAction, EcoAction } from '@/types/database';
 import { format } from 'date-fns';
 import { Leaf, Calendar, Clock, FileText, AlertCircle } from 'lucide-react';
@@ -29,12 +29,19 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
 
       try {
         setLoading(true);
-        const { data, error } = await getUserActions(userId);
+        console.log('Fetching actions for user ID:', userId);
+        
+        // Format the user ID as a UUID
+        const formattedUserId = formatUuid(userId);
+        console.log('Formatted user ID for Supabase:', formattedUserId);
+        
+        const { data, error } = await getUserActions(formattedUserId);
         
         if (error) {
           console.error('Error fetching user actions:', error);
           setError(error);
         } else {
+          console.log('Fetched user actions:', data?.length || 0);
           setActions(data as UserActionWithEcoAction[] | null);
         }
       } catch (err) {
