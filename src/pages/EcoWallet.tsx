@@ -46,8 +46,8 @@ const EcoWallet = () => {
           const txHistory = await getTransactions(user.id);
           setTransactions(txHistory);
         } catch (error) {
-          console.error('Error loading user data:', error);
-          toast.error('Failed to load your Buds balance and transaction history.');
+          console.error('error loading user data:', error);
+          toast.error('failed to load your buds balance and transaction history.');
         }
       }
     };
@@ -59,8 +59,8 @@ const EcoWallet = () => {
   const redemptionItems: RedemptionItem[] = [
     {
       id: 1,
-      name: 'Early Adopter Badge',
-      description: 'Show off your early commitment to sustainability',
+      name: 'early adopter badge',
+      description: 'show off your early commitment to sustainability',
       budsCost: 50,
       image: '/placeholder.svg',
       category: 'badge',
@@ -68,8 +68,8 @@ const EcoWallet = () => {
     },
     {
       id: 2,
-      name: 'Waste Warrior Badge',
-      description: 'Earned by properly recycling 50+ items',
+      name: 'waste warrior badge',
+      description: 'earned by properly recycling 50+ items',
       budsCost: 100,
       image: '/placeholder.svg',
       category: 'badge',
@@ -77,8 +77,8 @@ const EcoWallet = () => {
     },
     {
       id: 3,
-      name: 'Recycled Plastic Bracelet',
-      description: 'Handmade bracelet from ocean-bound plastic',
+      name: 'recycled plastic bracelet',
+      description: 'handmade bracelet from ocean-bound plastic',
       budsCost: 200,
       image: '/placeholder.svg',
       category: 'merch',
@@ -86,8 +86,8 @@ const EcoWallet = () => {
     },
     {
       id: 4,
-      name: 'Plant a Tree',
-      description: 'We\'ll plant a tree in a deforested area',
+      name: 'plant a tree',
+      description: 'we\'ll plant a tree in a deforested area',
       budsCost: 150,
       image: '/placeholder.svg',
       category: 'donation',
@@ -95,8 +95,8 @@ const EcoWallet = () => {
     },
     {
       id: 5,
-      name: 'Ocean Cleanup Donation',
-      description: 'Help remove 1 lb of plastic from the ocean',
+      name: 'ocean cleanup donation',
+      description: 'help remove 1 lb of plastic from the ocean',
       budsCost: 175,
       image: '/placeholder.svg',
       category: 'donation',
@@ -112,7 +112,7 @@ const EcoWallet = () => {
   // Handle redemption
   const handleRedeem = async (item: RedemptionItem) => {
     if (!isSignedIn || !user) {
-      toast.error('You must be signed in to redeem items.');
+      toast.error('you must be signed in to redeem items.');
       return;
     }
     
@@ -121,7 +121,7 @@ const EcoWallet = () => {
       const success = await spendBuds(
         user.id,
         item.budsCost,
-        `Redeemed: ${item.name}`
+        `redeemed: ${item.name}`
       );
       
       if (success) {
@@ -133,14 +133,14 @@ const EcoWallet = () => {
         setTransactions(updatedTransactions);
       }
     } catch (error) {
-      console.error('Error redeeming item:', error);
-      toast.error('Failed to redeem item. Please try again.');
+      console.error('error redeeming item:', error);
+      toast.error('failed to redeem item. please try again.');
     }
   };
   
   // Handle connecting bank account (Plaid integration placeholder)
   const handleConnectBank = () => {
-    toast.success('Bank connection feature coming soon!');
+    toast.success('bank connection feature coming soon!');
   };
   
   // Get score color
@@ -153,14 +153,14 @@ const EcoWallet = () => {
   // Routes to earn more Buds
   const budEarningActions = [
     {
-      name: 'Scan Receipts',
-      description: 'Upload receipts for eco-friendly purchases',
+      name: 'scan receipts',
+      description: 'upload receipts for eco-friendly purchases',
       icon: <Receipt size={24} className="text-eco-green" />,
       path: '/receiptify'
     },
     {
-      name: 'Scan Trash',
-      description: 'Properly dispose of waste items',
+      name: 'scan trash',
+      description: 'properly dispose of waste items',
       icon: <Camera size={24} className="text-eco-green" />,
       path: '/trash-scanner'
     }
@@ -176,7 +176,7 @@ const EcoWallet = () => {
             className="text-2xl md:text-3xl font-medium mb-2 flex items-center"
           >
             <Wallet className="mr-2 text-eco-green" size={28} />
-            EcoWallet
+            ecowallet
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: -10 }}
@@ -184,7 +184,7 @@ const EcoWallet = () => {
             transition={{ delay: 0.1 }}
             className="text-eco-dark/70"
           >
-            Earn and spend Buds for your eco-friendly actions
+            earn and spend Buds for your eco-friendly actions
           </motion.p>
         </div>
         
@@ -197,13 +197,13 @@ const EcoWallet = () => {
         >
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
-              <h2 className="text-lg font-medium mb-1">Your Buds Balance</h2>
+              <h2 className="text-lg font-medium mb-1">your buds balance</h2>
               <p className="text-3xl font-bold flex items-center">
                 <Leaf size={24} className="mr-2" />
-                {budsBalance} Buds
+                {budsBalance} buds
               </p>
               <p className="text-sm mt-2 text-white/80">
-                Earn more Buds by logging eco actions and scanning receipts
+                earn more buds by logging eco actions and scanning receipts
               </p>
             </div>
             
@@ -213,7 +213,7 @@ const EcoWallet = () => {
                 className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg flex items-center transition-colors"
               >
                 <History size={18} className="mr-2" />
-                Transaction History
+                transaction history
               </button>
               
               <button 
@@ -221,7 +221,7 @@ const EcoWallet = () => {
                 className="px-4 py-2 bg-white text-eco-green rounded-lg flex items-center hover:bg-white/90 transition-colors"
               >
                 <CreditCard size={18} className="mr-2" />
-                Connect Bank Account
+                connect bank account
               </button>
             </div>
           </div>
@@ -235,12 +235,12 @@ const EcoWallet = () => {
             exit={{ opacity: 0, height: 0 }}
             className="mb-8 bg-white rounded-xl p-6 eco-shadow"
           >
-            <h2 className="text-xl font-medium mb-4">Transaction History</h2>
+            <h2 className="text-xl font-medium mb-4">transaction history</h2>
             
             {transactions.length === 0 ? (
               <div className="text-center py-8 text-eco-dark/70">
                 <History size={48} className="mx-auto mb-4 text-eco-dark/30" />
-                <p>No transactions yet. Start earning and spending Buds!</p>
+                <p>no transactions yet. start earning and spending buds!</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -254,7 +254,7 @@ const EcoWallet = () => {
                       <p className="text-sm text-eco-dark/70">{transaction.date}</p>
                     </div>
                     <div className={`font-medium ${transaction.type === 'earned' ? 'text-eco-green' : 'text-red-500'}`}>
-                      {transaction.type === 'earned' ? '+' : '-'}{transaction.amount} Buds
+                      {transaction.type === 'earned' ? '+' : '-'}{transaction.amount} buds
                     </div>
                   </div>
                 ))}
@@ -270,7 +270,7 @@ const EcoWallet = () => {
           transition={{ delay: 0.3 }}
           className="mb-8 bg-white rounded-xl p-6 eco-shadow"
         >
-          <h2 className="text-xl font-medium mb-4">Ways to Earn Buds</h2>
+          <h2 className="text-xl font-medium mb-4">ways to earn buds</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {budEarningActions.map((action, index) => (
@@ -291,7 +291,7 @@ const EcoWallet = () => {
         
         {/* Redemption Options */}
         <div className="mb-6">
-          <h2 className="text-xl font-medium mb-4">Redeem Your Buds</h2>
+          <h2 className="text-xl font-medium mb-4">redeem your buds</h2>
           
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2 mb-6">
@@ -303,7 +303,7 @@ const EcoWallet = () => {
                   : 'bg-eco-cream text-eco-dark hover:bg-eco-green/10'
               }`}
             >
-              All
+              all
             </button>
             <button 
               onClick={() => setSelectedCategory('badge')}
@@ -314,7 +314,7 @@ const EcoWallet = () => {
               }`}
             >
               <Badge size={16} className="mr-2" />
-              Digital Badges
+              digital badges
             </button>
             <button 
               onClick={() => setSelectedCategory('merch')}
@@ -325,7 +325,7 @@ const EcoWallet = () => {
               }`}
             >
               <ShoppingBag size={16} className="mr-2" />
-              Eco Merch
+              eco merch
             </button>
             <button 
               onClick={() => setSelectedCategory('donation')}
@@ -336,7 +336,7 @@ const EcoWallet = () => {
               }`}
             >
               <TreePine size={16} className="mr-2" />
-              Donations
+              donations
             </button>
           </div>
           
@@ -361,7 +361,7 @@ const EcoWallet = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm font-medium text-eco-green">
                       <Leaf size={16} className="mr-1" />
-                      {item.budsCost} Buds
+                      {item.budsCost} buds
                     </div>
                     
                     <button
@@ -373,7 +373,7 @@ const EcoWallet = () => {
                           : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      {budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
+                      {budsBalance >= item.budsCost ? 'redeem' : 'not enough buds'}
                     </button>
                   </div>
                 </div>

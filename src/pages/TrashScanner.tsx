@@ -26,12 +26,12 @@ const TrashScanner = () => {
         const isConnected = await testApiConnection();
         setApiConnected(isConnected);
         if (!isConnected) {
-          setError('Could not connect to the API server. Please make sure it is running.');
+          setError('could not connect to the api server. please make sure it is running.');
         }
       } catch (err) {
         console.error('Error checking API connection:', err);
         setApiConnected(false);
-        setError('Could not connect to the API server. Please make sure it is running.');
+        setError('could not connect to the api server. please make sure it is running.');
       }
     };
     
@@ -75,7 +75,7 @@ const TrashScanner = () => {
     
     // Check API connection before scanning
     if (apiConnected === false) {
-      setError('Cannot scan image: API server is not connected. Please make sure it is running.');
+      setError('cannot scan image: api server is not connected. please make sure it is running.');
       return;
     }
     
@@ -98,7 +98,7 @@ const TrashScanner = () => {
       });
     } catch (err) {
       console.error('Error scanning image:', err);
-      setError('Failed to analyze the image. Please try again.');
+      setError('failed to analyze the image. please try again.');
     } finally {
       setIsScanning(false);
     }
@@ -193,7 +193,7 @@ const TrashScanner = () => {
                     className="px-4 py-2 bg-eco-green text-white text-sm rounded-lg hover:bg-eco-green/90 transition-colors flex items-center gap-1.5"
                   >
                     <Image size={16} />
-                    Browse Files
+                    browse files
                   </motion.button>
                   
                   <motion.button
@@ -203,7 +203,7 @@ const TrashScanner = () => {
                     className="px-4 py-2 bg-white border border-eco-green/20 text-eco-dark text-sm rounded-lg hover:bg-eco-green/5 transition-colors flex items-center gap-1.5"
                   >
                     <Camera size={16} />
-                    Take Photo
+                    take photo
                   </motion.button>
                 </div>
               </motion.div>
@@ -227,7 +227,7 @@ const TrashScanner = () => {
                       onClick={handleReset}
                       className="px-3 py-1.5 bg-white/90 text-eco-dark text-xs rounded-lg hover:bg-white transition-colors"
                     >
-                      Change Image
+                      change image
                     </motion.button>
                     
                     {!scanResult && !isScanning && (
@@ -237,7 +237,7 @@ const TrashScanner = () => {
                         onClick={scanImage}
                         className="px-3 py-1.5 bg-eco-green text-white text-xs rounded-lg hover:bg-eco-green/90 transition-colors"
                       >
-                        Scan Image
+                        scan image
                       </motion.button>
                     )}
                   </div>
@@ -278,7 +278,7 @@ const TrashScanner = () => {
                     <div>
                       <h3 className="font-medium capitalize">{scanResult.category}</h3>
                       <div className="text-xs text-eco-dark/70">
-                        Confidence: {scanResult.confidence}%
+                        confidence: {scanResult.confidence}%
                       </div>
                     </div>
                   </div>
@@ -286,7 +286,7 @@ const TrashScanner = () => {
                   <p className="text-sm mb-4">{scanResult.details}</p>
                   
                   <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-2">Tips:</h4>
+                    <h4 className="text-sm font-medium mb-2">tips:</h4>
                     <ul className="text-sm space-y-1">
                       {scanResult.tips.map((tip, index) => (
                         <li key={index} className="flex items-start">
@@ -299,7 +299,7 @@ const TrashScanner = () => {
                   
                   <div className="bg-white/50 rounded-lg p-3 text-center">
                     <p className="text-xs text-eco-dark/80">
-                      Remember, recycling rules vary by location. When in doubt, check your local waste management guidelines.
+                      remember, recycling rules vary by location. when in doubt, check your local waste management guidelines.
                     </p>
                   </div>
                 </motion.div>
@@ -316,20 +316,20 @@ const TrashScanner = () => {
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-eco-green/10 mb-4">
                           <Trash2 size={28} className="text-eco-green" />
                         </div>
-                        <h3 className="font-medium">How It Works</h3>
+                        <h3 className="font-medium">how it works</h3>
                       </div>
                       <ol className="text-sm space-y-3 text-eco-dark/80 max-w-xs">
                         <li className="flex items-start">
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-eco-green/10 text-eco-green text-xs mr-2 flex-shrink-0">1</span>
-                          <span>Upload an image of your waste item</span>
+                          <span>upload an image of your waste item</span>
                         </li>
                         <li className="flex items-start">
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-eco-green/10 text-eco-green text-xs mr-2 flex-shrink-0">2</span>
-                          <span>Our AI will analyze and categorize it</span>
+                          <span>our ai will analyze and categorize it</span>
                         </li>
                         <li className="flex items-start">
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-eco-green/10 text-eco-green text-xs mr-2 flex-shrink-0">3</span>
-                          <span>Get tips on how to properly dispose of it</span>
+                          <span>get tips on how to properly dispose of it</span>
                         </li>
                       </ol>
                     </>
@@ -338,7 +338,7 @@ const TrashScanner = () => {
                       <Image size={32} className="text-eco-green/50 mb-4" />
                       <h3 className="font-medium mb-2">ready to scan</h3>
                       <p className="text-sm text-eco-dark/70 text-center mb-4">
-                        Click "Scan Image" to analyze your waste item and determine how to properly dispose of it.
+                        click "scan image" to analyze your waste item and determine how to properly dispose of it.
                       </p>
                     </>
                   )}
@@ -356,7 +356,7 @@ const TrashScanner = () => {
                 onClick={handleReset}
                 className="mt-4 px-4 py-2 bg-white border border-eco-lightGray text-eco-dark text-sm rounded-lg hover:bg-eco-cream transition-colors self-center"
               >
-                Scan Another Item
+                scan another item
               </motion.button>
             )}
           </div>

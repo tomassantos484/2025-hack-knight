@@ -46,7 +46,7 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
         }
       } catch (err) {
         console.error('Exception fetching user actions:', err);
-        setError('Failed to load your eco actions. Please try again later.');
+        setError('failed to load your eco actions. please try again later.');
       } finally {
         setLoading(false);
       }
@@ -58,7 +58,7 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-medium mb-4">Your Eco Actions</h3>
+        <h3 className="text-lg font-medium mb-4">your eco actions</h3>
         {[1, 2, 3].map((i) => (
           <div key={i} className="bg-white rounded-lg p-4 shadow-sm border border-eco-lightGray/30">
             <Skeleton className="h-6 w-3/4 mb-2" />
@@ -75,7 +75,7 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 flex items-start gap-3">
         <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
         <div>
-          <h3 className="font-medium">Error loading actions</h3>
+          <h3 className="font-medium">error loading actions</h3>
           <p className="text-sm">{error}</p>
         </div>
       </div>
@@ -86,15 +86,15 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
     return (
       <div className="bg-eco-cream/50 rounded-lg p-6 text-center">
         <Leaf className="h-10 w-10 mx-auto mb-3 text-eco-green/70" />
-        <h3 className="text-lg font-medium mb-1">No eco actions yet</h3>
+        <h3 className="text-lg font-medium mb-1">no eco actions yet</h3>
         <p className="text-eco-dark/70 mb-4">
-          Start logging your sustainable actions to track your positive impact.
+          start logging your sustainable actions to track your positive impact.
         </p>
         <button 
           className="bg-eco-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-eco-green/90 transition-colors"
           onClick={() => window.location.href = '/actions'}
         >
-          Log Your First Action
+          log your first action
         </button>
       </div>
     );
@@ -102,7 +102,7 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
 
   return (
     <div>
-      <h3 className="text-lg font-medium mb-4">Your Eco Actions</h3>
+      <h3 className="text-lg font-medium mb-4">your eco actions</h3>
       <div className="space-y-4">
         {actions.map((action) => (
           <motion.div
@@ -113,7 +113,7 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
           >
             <div className="flex justify-between items-start">
               <h4 className="font-medium">
-                {action.eco_actions?.title || 'Eco Action'}
+                {action.eco_actions?.title || 'eco action'}
               </h4>
               <span className="text-xs bg-eco-green/10 text-eco-green px-2 py-1 rounded-full">
                 +{action.buds_earned} buds
@@ -124,14 +124,14 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
               <div className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>
-                  {action.completed_at ? format(new Date(action.completed_at), 'MMM d, yyyy') : 'Unknown date'}
+                  {action.completed_at ? format(new Date(action.completed_at), 'MMM d, yyyy') : 'unknown date'}
                 </span>
               </div>
               
               <div className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 <span>
-                  {action.completed_at ? format(new Date(action.completed_at), 'h:mm a') : 'Unknown time'}
+                  {action.completed_at ? format(new Date(action.completed_at), 'h:mm a') : 'unknown time'}
                 </span>
               </div>
             </div>

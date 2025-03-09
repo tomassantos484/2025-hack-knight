@@ -8,46 +8,46 @@ const HowItWorks = () => {
   const features = [
     {
       icon: <Camera className="w-8 h-8 text-eco-green" />,
-      title: "Trash Scanner",
-      description: "Use our AI-powered scanner to identify and properly sort your waste items, ensuring correct recycling practices."
+      title: "trash scanner",
+      description: "use our ai-powered scanner to identify and properly sort your waste items, ensuring correct recycling practices."
     },
     {
       icon: <LineChart className="w-8 h-8 text-eco-green" />,
-      title: "Progress Tracking",
-      description: "Monitor your environmental impact through detailed statistics and visualizations of your eco-friendly actions."
+      title: "progress tracking",
+      description: "monitor your environmental impact through detailed statistics and visualizations of your eco-friendly actions."
     },
     {
       icon: <Award className="w-8 h-8 text-eco-green" />,
-      title: "Eco Challenges",
-      description: "Participate in daily and weekly challenges to develop sustainable habits and earn recognition."
+      title: "eco challenges",
+      description: "participate in daily and weekly challenges to develop sustainable habits and earn recognition."
     },
     {
       icon: <Leaf className="w-8 h-8 text-eco-green" />,
-      title: "Eco Tips",
-      description: "Get personalized recommendations and tips to reduce your environmental footprint in your daily life."
+      title: "eco tips",
+      description: "get personalized recommendations and tips to reduce your environmental footprint in your daily life."
     }
   ];
 
   const steps = [
     {
       number: "01",
-      title: "Sign Up",
-      description: "Create your account to start your sustainability journey with EcoVision."
+      title: "sign up",
+      description: "create your account to start your sustainability journey with ecovision."
     },
     {
       number: "02",
-      title: "Track Actions",
-      description: "Log your daily eco-friendly actions and use our trash scanner for proper waste management."
+      title: "track actions",
+      description: "log your daily eco-friendly actions and use our trash scanner for proper waste management."
     },
     {
       number: "03",
-      title: "Complete Challenges",
-      description: "Participate in challenges to develop sustainable habits and make a bigger impact."
+      title: "complete challenges",
+      description: "participate in challenges to develop sustainable habits and make a bigger impact."
     },
     {
       number: "04",
-      title: "Monitor Progress",
-      description: "Track your progress and see your positive impact on the environment grow over time."
+      title: "monitor progress",
+      description: "track your progress and see your positive impact on the environment grow over time."
     }
   ];
 
@@ -63,7 +63,7 @@ const HowItWorks = () => {
         >
           <h1 className="text-4xl md:text-5xl text-eco-dark mb-6">how ecovision works</h1>
           <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto">
-            Join us in making a positive impact on the environment through our innovative platform that makes sustainable living easy and rewarding.
+            join us in making a positive impact on the environment through our innovative platform that makes sustainable living easy and rewarding.
           </p>
         </motion.div>
 
@@ -92,7 +92,7 @@ const HowItWorks = () => {
           className="bg-eco-cream rounded-2xl p-8 md:p-12"
         >
           <h2 className="text-3xl font-bold text-eco-dark mb-12 text-center">
-            Getting Started is Easy
+            getting started is easy
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
@@ -130,7 +130,7 @@ const HowItWorks = () => {
           className="text-center mt-20"
         >
           <h2 className="text-2xl md:text-3xl font-bold text-eco-dark mb-6">
-            Ready to Make a Difference?
+            ready to make a difference?
           </h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -138,7 +138,7 @@ const HowItWorks = () => {
             className="bg-eco-green text-white px-10 py-4 rounded-full shadow-lg font-semibold inline-flex items-center space-x-3 hover:bg-eco-green/90 transition-colors"
           >
             <Link to="/sign-up" className="flex items-center space-x-2">
-              <span>Get Started Today</span>
+              <span>get started today</span>
               <ArrowRight className="w-5 h-5" />
             </Link>
           </motion.button>

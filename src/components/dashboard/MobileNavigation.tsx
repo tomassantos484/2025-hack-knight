@@ -49,7 +49,7 @@ const MobileNavigation = ({
           className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
         >
           <LogOut size={18} className="mr-2" />
-          Sign Out
+          sign out
         </button>
       </div>
     </motion.div>
