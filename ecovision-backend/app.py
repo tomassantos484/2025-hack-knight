@@ -16,13 +16,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure CORS to allow requests from your frontend application
-# Allow all origins in development, but restrict in production
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", 
-                                         "https://localhost:8080", 
-                                         "http://localhost:5173", 
-                                         "https://localhost:5173", 
-                                         "https://2025-hack-knight.vercel.app", 
-                                         "https://*.vercel.app"], 
+# Allow all origins for debugging
+CORS(app, resources={r"/*": {"origins": "*", 
                             "methods": ["GET", "POST", "OPTIONS"], 
                             "allow_headers": "*"}})
 

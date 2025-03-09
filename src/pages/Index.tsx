@@ -464,7 +464,7 @@ const Index = () => {
             >
               <div className="rounded-2xl overflow-hidden shadow-lg eco-shadow">
                 <img 
-                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c" 
+                  src="/ecovision_team.jpeg" 
                   alt="ecovision team" 
                   className="w-full h-auto object-cover aspect-[4/3]" 
                 />
@@ -498,7 +498,7 @@ const Index = () => {
               </p>
               
               <div className="pt-4">
-                <Link to="/features">
+                <Link to="/about">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

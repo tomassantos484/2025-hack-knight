@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-// Use environment variable if available, otherwise use the Vercel deployment URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://https://2025-hack-knight.vercel.app/';
+// Use environment variable if available, otherwise use the deployed backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://2025-hack-knight.vercel.app';
 
 console.log('Using API base URL:', API_BASE_URL);
 
@@ -44,6 +44,18 @@ export const testApiConnection = async (): Promise<boolean> => {
     return response.status === 200;
   } catch (error) {
     console.error('Error connecting to API server:', error);
+    // Log more details about the error
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response ? {
+          status: error.response.status,
+          data: error.response.data
+        } : 'No response',
+        request: error.request ? 'Request was made but no response received' : 'No request was made'
+      });
+    }
     return false;
   }
 };

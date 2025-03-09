@@ -33,7 +33,7 @@ const About = () => {
             >
               <div className="rounded-2xl overflow-hidden shadow-lg eco-shadow">
                 <img 
-                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c" 
+                  src="/ecovision_team.jpeg" 
                   alt="ecovision team" 
                   className="w-full h-auto object-cover aspect-[4/3]" 
                 />

@@ -28,7 +28,9 @@ const TrashScanner = () => {
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
+        console.log("Checking API connection...");
         const isConnected = await testApiConnection();
+        console.log("API connection result:", isConnected);
         setApiConnected(isConnected);
         if (!isConnected) {
           setApiError("Could not connect to the API server. Using offline mode.");
@@ -154,6 +156,26 @@ const TrashScanner = () => {
     }
   };
 
+  // Add a function to test the API directly
+  const testApiDirectly = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://2025-hack-knight.vercel.app';
+      console.log('Testing API directly at:', apiUrl);
+      
+      const response = await fetch(`${apiUrl}/api/test?t=${new Date().getTime()}`);
+      const data = await response.json();
+      
+      console.log('Direct API test response:', data);
+      alert(`API Test Result: ${JSON.stringify(data, null, 2)}`);
+      
+      return true;
+    } catch (error) {
+      console.error('Error testing API directly:', error);
+      alert(`API Test Error: ${error.message}`);
+      return false;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
@@ -173,6 +195,25 @@ const TrashScanner = () => {
           >
             upload a photo to see if your item is recyclable, compostable, or trash
           </motion.p>
+        </div>
+        
+        {/* API Connection Status */}
+        <div className="mb-4">
+          <p className="text-sm">
+            API Status: {apiConnected === null ? 'Checking...' : 
+                        apiConnected ? 
+                        <span className="text-green-500 font-medium">Connected</span> : 
+                        <span className="text-red-500 font-medium">Disconnected (Using Offline Mode)</span>}
+          </p>
+          {apiError && <p className="text-sm text-red-500">{apiError}</p>}
+          
+          {/* Add a direct test button */}
+          <button 
+            onClick={testApiDirectly}
+            className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+          >
+            Test API Directly
+          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
