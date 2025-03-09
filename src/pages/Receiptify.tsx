@@ -1,11 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { Receipt, Upload, Camera, AlertCircle, CheckCircle, Leaf, ShoppingBag, X, BarChart3, Clock, ArrowRight, Bug } from 'lucide-react';
+import { Receipt, Upload, Camera, AlertCircle, CheckCircle, Leaf, ShoppingBag, X, BarChart3, Clock, ArrowRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { analyzeReceipt } from '../services/receiptService';
 import { earnBuds } from '../services/walletService';
+import { 
+  getUserReceiptHistory, 
+  Receipt as ReceiptType, 
+  storeReceiptItems, 
+  getReceiptItems,
+  ReceiptItem as DbReceiptItem
+} from '../services/receiptProcessingService';
+import { supabase } from '../services/supabaseClient';
+import { generateValidUuid } from '../services/receiptProcessingService';
 
 // Add this type for the Clerk user with getToken method
 interface ClerkUser {
@@ -38,6 +47,256 @@ interface ReceiptAnalysis {
   extractedText: string;
 }
 
+// Interface for scan history item
+interface ScanHistoryItem {
+  id: string;
+  date: string;
+  score: number;
+  items: number;
+}
+
+// Update the createTestReceipt function with better error handling
+const createTestReceipt = async (userId: string): Promise<string | null> => {
+  try {
+    console.log('Creating test receipt for user:', userId);
+    
+    if (!userId) {
+      console.error('No user ID provided for test receipt');
+      throw new Error('User ID is required');
+    }
+    
+    // Format the user ID as UUID
+    const formattedUserId = userId.replace(/[^a-f0-9]/gi, '');
+    const paddedUserId = (formattedUserId + '0'.repeat(32)).slice(0, 32);
+    const userUuid = `${paddedUserId.slice(0, 8)}-${paddedUserId.slice(8, 12)}-${paddedUserId.slice(12, 16)}-${paddedUserId.slice(16, 20)}-${paddedUserId.slice(20, 32)}`;
+    
+    console.log('Formatted user UUID:', userUuid);
+    
+    // Generate a unique receipt ID
+    const receiptId = generateValidUuid();
+    console.log('Generated receipt ID:', receiptId);
+    
+    // Create a test receipt
+    const testReceipt = {
+      id: receiptId,
+      user_id: userUuid,
+      eco_score: 75,
+      eco_items_count: 3,
+      total_items_count: 5,
+      carbon_footprint: 2.5,
+      buds_earned: 50,
+      total_amount: 45.99,
+      created_at: new Date().toISOString()
+    };
+    
+    console.log('Inserting test receipt:', testReceipt);
+    
+    // Check if the receipts table exists
+    try {
+      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+        'check_table_exists',
+        { table_name: 'receipts' }
+      );
+      
+      if (tableCheckError) {
+        console.error('Error checking if receipts table exists:', tableCheckError);
+        // Continue anyway, the insert will fail if the table doesn't exist
+      } else if (!tableExists) {
+        console.error('receipts table does not exist');
+        throw new Error('receipts table does not exist. Please run the schema.sql file in your Supabase SQL editor.');
+      }
+    } catch (tableCheckError) {
+      console.error('Error in check_table_exists RPC:', tableCheckError);
+      // Continue anyway, we'll try the insert directly
+    }
+    
+    // Insert the test receipt
+    const { data, error } = await supabase
+      .from('receipts')
+      .insert(testReceipt);
+    
+    if (error) {
+      console.error('Error creating test receipt:', error);
+      
+      // Check if the error is because the table doesn't exist
+      if (error.code === '42P01') { // relation does not exist
+        throw new Error('receipts table does not exist. Please run the schema.sql file in your Supabase SQL editor.');
+      }
+      
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    console.log('Test receipt created successfully with ID:', receiptId);
+    
+    // Generate sample items
+    const sampleItems = generateSampleItems(3, 5);
+    
+    // Store the sample items
+    try {
+      const storeResult = await storeReceiptItems(receiptId, sampleItems);
+      console.log('Sample items storage result:', storeResult);
+      
+      if (!storeResult) {
+        console.warn('Failed to store sample items, but receipt was created');
+      }
+    } catch (storeError) {
+      console.error('Error storing sample items:', storeError);
+      // Continue anyway, the receipt was created successfully
+    }
+    
+    return receiptId;
+  } catch (error) {
+    console.error('Error in createTestReceipt:', error);
+    
+    if (error instanceof Error) {
+      throw error; // Re-throw to be handled by the caller
+    } else {
+      throw new Error('Unknown error creating test receipt');
+    }
+  }
+};
+
+// Update the loadReceiptDetails function to use maybeSingle()
+const loadReceiptDetails = async (receiptId: string) => {
+  try {
+    console.log('Loading details for receipt:', receiptId);
+    
+    if (!receiptId) {
+      throw new Error('Receipt ID is required');
+    }
+    
+    // Get the receipt metadata
+    const { data, error } = await supabase
+      .from('receipts')
+      .select('*')
+      .eq('id', receiptId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error loading receipt details from database:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    if (!data) {
+      console.log('No receipt found with ID:', receiptId);
+      throw new Error('Receipt not found');
+    }
+    
+    console.log('Loaded receipt details:', data);
+    
+    // Get the receipt items
+    try {
+      const receiptItems = await getReceiptItems(receiptId);
+      console.log('Loaded receipt items:', receiptItems);
+      
+      // Convert the database items to the format expected by the UI
+      const items: ReceiptItem[] = receiptItems.map((item, index) => ({
+        id: index,
+        name: item.name,
+        price: item.price,
+        isEcoFriendly: item.is_eco_friendly,
+        category: item.category || 'Uncategorized',
+        carbonFootprint: item.carbon_footprint || 0,
+        alternativeSuggestion: item.suggestion
+      }));
+      
+      // If no items were found, generate sample items
+      if (items.length === 0) {
+        console.log('No items found, generating sample items');
+        const sampleItems = generateSampleItems(data.eco_items_count || 0, data.total_items_count || 0);
+        
+        // Store the sample items for future reference
+        try {
+          const storeResult = await storeReceiptItems(receiptId, sampleItems);
+          console.log('Sample items storage result:', storeResult);
+        } catch (storeError) {
+          console.error('Error storing sample items:', storeError);
+          // Continue anyway, we can still use the sample items
+        }
+        
+        // Use the sample items
+        items.push(...sampleItems);
+      }
+      
+      // Convert the receipt data to the analysis format
+      const analysis: ReceiptAnalysis = {
+        totalItems: data.total_items_count || 0,
+        ecoFriendlyItems: data.eco_items_count || 0,
+        totalSpent: data.total_amount || 0,
+        ecoFriendlySpent: data.eco_friendly_spent || 0,
+        ecoScore: data.eco_score || 0,
+        totalCarbonFootprint: data.carbon_footprint || 0,
+        budsEarned: data.buds_earned || 0,
+        items: items,
+        extractedText: "Receipt details loaded from history"
+      };
+      
+      return analysis;
+    } catch (itemsError) {
+      console.error('Error loading receipt items:', itemsError);
+      
+      // Even if we can't load items, we can still return the receipt with sample items
+      console.log('Falling back to sample items due to error');
+      const sampleItems = generateSampleItems(data.eco_items_count || 0, data.total_items_count || 0);
+      
+      const analysis: ReceiptAnalysis = {
+        totalItems: data.total_items_count || 0,
+        ecoFriendlyItems: data.eco_items_count || 0,
+        totalSpent: data.total_amount || 0,
+        ecoFriendlySpent: data.eco_friendly_spent || 0,
+        ecoScore: data.eco_score || 0,
+        totalCarbonFootprint: data.carbon_footprint || 0,
+        budsEarned: data.buds_earned || 0,
+        items: sampleItems,
+        extractedText: "Receipt details loaded from history (with sample items)"
+      };
+      
+      return analysis;
+    }
+  } catch (error) {
+    console.error('Error in loadReceiptDetails:', error);
+    throw error; // Re-throw to be handled by the caller
+  }
+};
+
+// Helper function to generate sample items for historical receipts
+const generateSampleItems = (ecoCount: number, totalCount: number): ReceiptItem[] => {
+  const items: ReceiptItem[] = [];
+  
+  // Generate eco-friendly items
+  for (let i = 0; i < ecoCount; i++) {
+    items.push({
+      id: i,
+      name: `Eco-friendly Item ${i + 1}`,
+      price: Math.round(Math.random() * 1000) / 100, // Random price between $0-$10
+      isEcoFriendly: true,
+      category: 'Eco Products',
+      carbonFootprint: Math.round(Math.random() * 100) / 100, // Random footprint
+      alternativeSuggestion: i % 2 === 0 ? 'This is already a great eco-friendly choice!' : undefined
+    });
+  }
+  
+  // Generate non-eco-friendly items
+  for (let i = 0; i < (totalCount - ecoCount); i++) {
+    items.push({
+      id: i + ecoCount,
+      name: `Regular Item ${i + 1}`,
+      price: Math.round(Math.random() * 2000) / 100, // Random price between $0-$20
+      isEcoFriendly: false,
+      category: 'Regular Products',
+      carbonFootprint: Math.round(Math.random() * 500) / 100, // Higher random footprint
+      alternativeSuggestion: 'Consider switching to an eco-friendly alternative'
+    });
+  }
+  
+  return items;
+};
+
+// Add a function to check if a receipt ID is a valid UUID
+const isValidUuid = (id: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
 const Receiptify = () => {
   const { isSignedIn } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
@@ -53,7 +312,68 @@ const Receiptify = () => {
   const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
   
   // State for scan history
-  const [scanHistory, setHistory] = useState<{date: string, score: number, items: number}[]>([]);
+  const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
+  
+  // State for loading history
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  
+  // Add a state to track if the current analysis is from history
+  const [isFromHistory, setIsFromHistory] = useState<boolean>(false);
+  
+  // Load receipt history when component mounts or when user authentication changes
+  useEffect(() => {
+    const loadReceiptHistory = async () => {
+      if (isSignedIn && user && userIsLoaded) {
+        setIsLoadingHistory(true);
+        try {
+          console.log('Loading receipt history for user:', user.id);
+          const receipts = await getUserReceiptHistory(user.id);
+          console.log('Loaded receipt history:', receipts);
+          
+          if (receipts.length === 0) {
+            console.log('No receipts found for user. Trying alternative ID format...');
+            // Try with a different user ID format as a fallback
+            const altReceipts = await getUserReceiptHistory(user.id.replace('user_', ''));
+            console.log('Alternative ID search results:', altReceipts);
+            
+            if (altReceipts.length > 0) {
+              // Convert receipts to scan history format
+              const history = altReceipts.map(receipt => ({
+                id: receipt.id,
+                date: new Date(receipt.created_at).toLocaleDateString(),
+                score: receipt.eco_score || 0,
+                items: receipt.total_items_count || 0
+              }));
+              
+              setScanHistory(history);
+              console.log('Set scan history from alternative ID:', history);
+              return;
+            }
+          }
+          
+          // Convert receipts to scan history format
+          const history = receipts.map(receipt => ({
+            id: receipt.id,
+            date: new Date(receipt.created_at).toLocaleDateString(),
+            score: receipt.eco_score || 0,
+            items: receipt.total_items_count || 0
+          }));
+          
+          setScanHistory(history);
+          console.log('Set scan history:', history);
+        } catch (error) {
+          console.error('Error loading receipt history:', error);
+          toast.error('Failed to load receipt history');
+        } finally {
+          setIsLoadingHistory(false);
+        }
+      } else {
+        console.log('User not fully authenticated yet:', { isSignedIn, userIsLoaded, userId: user?.id });
+      }
+    };
+    
+    loadReceiptHistory();
+  }, [isSignedIn, user, userIsLoaded]);
   
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +422,7 @@ const Receiptify = () => {
     if (!receiptImage) return;
     
     setIsScanning(true);
+    setIsFromHistory(false); // Reset this flag for new scans
     
     try {
       // Convert base64 to file
@@ -119,14 +440,37 @@ const Receiptify = () => {
       setAnalysis(analysis);
       setIsScanning(false);
       
+      // Try to get the receipt ID from the database
+      let receiptId = '';
+      
+      if (isSignedIn && user) {
+        // Get the most recent receipt for this user
+        const receipts = await getUserReceiptHistory(user.id);
+        if (receipts && receipts.length > 0) {
+          // Sort by created_at to get the most recent
+          receipts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          receiptId = receipts[0].id;
+          
+          // Store the receipt items
+          if (receiptId && analysis.items && analysis.items.length > 0) {
+            console.log('Storing receipt items for receipt:', receiptId);
+            await storeReceiptItems(receiptId, analysis.items);
+          }
+        }
+      }
+      
+      // Generate a valid UUID for temporary IDs instead of using a timestamp
+      const tempId = receiptId || generateValidUuid();
+      
       // Add to scan history
-      const newScan = {
+      const newScan: ScanHistoryItem = {
+        id: tempId,
         date: new Date().toLocaleDateString(),
         score: analysis.ecoScore,
         items: analysis.totalItems
       };
       
-      setHistory(prev => [newScan, ...prev]);
+      setScanHistory(prev => [newScan, ...prev]);
       
       // Award buds to the user through wallet service if they're signed in
       if (isSignedIn && user) {
@@ -150,6 +494,7 @@ const Receiptify = () => {
   const handleReset = () => {
     setReceiptImage(null);
     setAnalysis(null);
+    setIsFromHistory(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -162,23 +507,162 @@ const Receiptify = () => {
     return 'text-eco-green';
   };
   
-  // Debug function
-  const debugAnalysis = () => {
-    console.log('Current analysis data:', analysis);
-    alert('Analysis data logged to console');
+  // Update the handleReceiptClick function to handle the PGRST116 error code
+  const handleReceiptClick = async (receiptId: string) => {
+    setIsLoadingHistory(true);
+    
+    try {
+      console.log('Attempting to load receipt details for ID:', receiptId);
+      
+      // For receipts that were just scanned and not yet saved to the database,
+      // we already have the analysis in state, so we don't need to load it
+      if (analysis && !isFromHistory) {
+        console.log('Using existing analysis for current receipt');
+        setIsFromHistory(true);
+        toast.success('Loaded receipt details');
+        setIsLoadingHistory(false);
+        return;
+      }
+      
+      // Check if the receipt ID is valid
+      if (!receiptId) {
+        console.error('Invalid receipt ID: empty');
+        toast.error('Cannot load details: Invalid receipt ID');
+        setIsLoadingHistory(false);
+        return;
+      }
+      
+      // First, check if the receipt exists
+      try {
+        // Use a different approach to check if the receipt exists
+        // Instead of using .single(), which throws an error if no rows are found,
+        // we'll use .maybeSingle() which returns null if no rows are found
+        const { data: receiptExists, error: receiptCheckError } = await supabase
+          .from('receipts')
+          .select('id')
+          .eq('id', receiptId)
+          .maybeSingle();
+        
+        if (receiptCheckError) {
+          // If the error is about invalid UUID format, it might be a temporary ID
+          if (receiptCheckError.code === '22P02') {
+            console.error('Cannot load temporary receipt:', receiptId);
+            toast.error('This receipt has not been saved to the database yet');
+            setIsLoadingHistory(false);
+            return;
+          }
+          
+          // If the error is PGRST116, it means no rows were found
+          if (receiptCheckError.code === 'PGRST116') {
+            console.error('Receipt not found in database:', receiptId);
+            toast.error('Receipt not found in database');
+            setIsLoadingHistory(false);
+            return;
+          }
+          
+          console.error('Error checking if receipt exists:', receiptCheckError);
+          toast.error(`Receipt check error: ${receiptCheckError.message}`);
+          setIsLoadingHistory(false);
+          return;
+        }
+        
+        if (!receiptExists) {
+          console.error('Receipt not found in database:', receiptId);
+          toast.error('Receipt not found in database');
+          setIsLoadingHistory(false);
+          return;
+        }
+        
+        // Now try to load the receipt details
+        const receiptAnalysis = await loadReceiptDetails(receiptId);
+        
+        if (receiptAnalysis) {
+          setAnalysis(receiptAnalysis);
+          setReceiptImage(null); // Clear any current receipt image
+          setIsFromHistory(true); // Mark this analysis as from history
+          toast.success('Loaded receipt details');
+        } else {
+          console.error('Failed to load receipt details for ID:', receiptId);
+          toast.error('Failed to load receipt details');
+        }
+      } catch (error) {
+        console.error('Error checking receipt:', error);
+        
+        // Provide more specific error message
+        if (error instanceof Error) {
+          toast.error(`Error: ${error.message}`);
+        } else {
+          toast.error('An unexpected error occurred while checking receipt');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading receipt details:', error);
+      
+      // Provide more specific error message
+      if (error instanceof Error) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.error('An unexpected error occurred while loading receipt details');
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+  
+  // Update the handleCreateTestReceipt function to handle errors properly
+  const handleCreateTestReceipt = async () => {
+    if (!isSignedIn || !user) {
+      toast.error('You must be signed in to create a test receipt');
+      return;
+    }
+    
+    setIsLoadingHistory(true);
+    
+    try {
+      const receiptId = await createTestReceipt(user.id);
+      
+      if (receiptId) {
+        toast.success('Test receipt created successfully');
+        
+        // Add the new receipt to the scan history
+        const newScan: ScanHistoryItem = {
+          id: receiptId,
+          date: new Date().toLocaleDateString(),
+          score: 75,
+          items: 5
+        };
+        
+        setScanHistory(prev => [newScan, ...prev]);
+        
+        // Optionally, load the receipt details immediately
+        try {
+          const receiptAnalysis = await loadReceiptDetails(receiptId);
+          if (receiptAnalysis) {
+            setAnalysis(receiptAnalysis);
+            setReceiptImage(null);
+            setIsFromHistory(true);
+          }
+        } catch (loadError) {
+          console.error('Error loading test receipt details:', loadError);
+          // Don't show an error toast here, the receipt was created successfully
+        }
+      }
+    } catch (error) {
+      console.error('Error creating test receipt:', error);
+      
+      // Provide more specific error message
+      if (error instanceof Error) {
+        toast.error(`Error creating test receipt: ${error.message}`);
+      } else {
+        toast.error('An unexpected error occurred while creating the test receipt');
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
   
   return (
     <DashboardLayout>
-      {/* Debug button fixed in bottom right */}
-      <button
-        onClick={debugAnalysis}
-        className="fixed bottom-4 right-4 z-50 bg-black text-white p-2 rounded-full shadow-lg"
-        aria-label="Debug"
-      >
-        <Bug size={20} />
-      </button>
-      
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <motion.h1 
@@ -311,7 +795,14 @@ const Receiptify = () => {
                 className="bg-white rounded-xl p-6 eco-shadow mb-8 relative"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-medium text-[#4a4a4a]">Receipt Analysis</h2>
+                  <div className="flex items-center">
+                    <h2 className="text-2xl font-medium text-[#4a4a4a]">Receipt Analysis</h2>
+                    {isFromHistory && (
+                      <span className="ml-3 px-2 py-1 bg-eco-green/10 text-eco-green text-xs rounded-full">
+                        From History
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={handleReset}
                     className="p-2 text-[#4a4a4a]/70 hover:text-[#4a4a4a] absolute top-4 right-4"
@@ -411,13 +902,6 @@ const Receiptify = () => {
                   
                   <div className="flex gap-2">
                     <button
-                      onClick={debugAnalysis}
-                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/80 transition-colors"
-                    >
-                      Debug
-                    </button>
-                    
-                    <button
                       onClick={() => toast.success('Receipt details saved!')}
                       className="px-4 py-2 bg-[#4a9b5c] text-white rounded-lg hover:bg-[#4a9b5c]/90 transition-colors"
                     >
@@ -443,25 +927,55 @@ const Receiptify = () => {
                 Recent Scans
               </h2>
               
-              {scanHistory.length === 0 ? (
+              {isLoadingHistory ? (
+                <div className="text-center py-6 text-eco-dark/70">
+                  <div className="w-8 h-8 border-2 border-eco-green border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p>Loading scan history...</p>
+                </div>
+              ) : scanHistory.length === 0 ? (
                 <div className="text-center py-6 text-eco-dark/70">
                   <Receipt size={32} className="mx-auto mb-2 text-eco-dark/30" />
                   <p>No scan history yet</p>
                   <p className="text-sm">Scan your first receipt to get started</p>
+                  
+                  {isSignedIn && (
+                    <button
+                      onClick={handleCreateTestReceipt}
+                      className="mt-4 px-3 py-1.5 bg-eco-green/10 text-eco-green text-sm rounded-lg hover:bg-eco-green/20 transition-colors flex items-center mx-auto"
+                    >
+                      <Plus size={14} className="mr-1" />
+                      Create Test Receipt
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {scanHistory.map((scan, index) => (
                     <div 
                       key={index}
-                      className="p-3 bg-eco-cream/50 rounded-lg flex justify-between items-center"
+                      className={`p-3 ${isValidUuid(scan.id) ? 'bg-eco-cream/50 cursor-pointer hover:bg-eco-cream' : 'bg-gray-100 cursor-not-allowed'} rounded-lg flex justify-between items-center transition-colors`}
+                      onClick={() => isValidUuid(scan.id) ? handleReceiptClick(scan.id) : toast.error('This receipt has not been saved to the database yet')}
                     >
                       <div>
-                        <div className="text-sm font-medium">{scan.date}</div>
+                        <div className="text-sm font-medium flex items-center">
+                          {scan.date}
+                          {!isValidUuid(scan.id) && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
+                              Temporary
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-eco-dark/70">{scan.items} items</div>
                       </div>
-                      <div className={`text-sm font-medium ${getScoreColor(scan.score)}`}>
-                        {scan.score}/100
+                      <div className="flex items-center">
+                        <div className={`text-sm font-medium ${getScoreColor(scan.score)} mr-2`}>
+                          {scan.score}/100
+                        </div>
+                        {isValidUuid(scan.id) ? (
+                          <ArrowRight size={14} className="text-eco-dark/50" />
+                        ) : (
+                          <X size={14} className="text-gray-400" />
+                        )}
                       </div>
                     </div>
                   ))}
