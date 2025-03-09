@@ -1,68 +1,83 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LightbulbIcon } from 'lucide-react';
+import { Lightbulb, X, ExternalLink, Check } from 'lucide-react';
 
 interface EcoTipProps {
-  tip: string;
-  source?: string;
-  children?: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning';
-  icon?: React.ReactNode;
-  className?: string;
+  title: string;
+  description: string;
+  impact?: string;
+  category?: string;
+  onClose?: () => void;
+  onTryThis?: () => void;
 }
 
-const EcoTip = ({ 
-  tip, 
-  source, 
-  children, 
-  variant = 'default',
-  icon,
-  className = ''
-}: EcoTipProps) => {
-  // Define variant-specific styles
-  const variantStyles = {
-    default: {
-      bg: 'bg-eco-green/10',
-      border: 'border-eco-green/20',
-      iconBg: 'bg-eco-green/20',
-      iconColor: 'text-eco-green',
-      title: 'daily eco tip'
-    },
-    success: {
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      iconBg: 'bg-green-100',
-      iconColor: 'text-green-600',
-      title: 'eco success'
-    },
-    warning: {
-      bg: 'bg-amber-50',
-      border: 'border-amber-200',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600',
-      title: 'eco alert'
-    }
-  };
-
-  const styles = variantStyles[variant];
-
+const EcoTip: React.FC<EcoTipProps> = ({
+  title,
+  description,
+  impact,
+  category,
+  onClose,
+  onTryThis
+}) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className={`${styles.bg} border ${styles.border} rounded-xl p-5 ${className}`}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white border border-eco-lightGray/50 rounded-xl p-5 shadow-md mb-4 relative"
     >
-      <div className="flex items-start gap-3">
-        <div className={`${styles.iconBg} rounded-full p-2 mt-1`}>
-          {icon || <LightbulbIcon size={16} className={styles.iconColor} />}
+      <div className="absolute top-3 right-3 flex space-x-2">
+        {onTryThis && (
+          <button 
+            onClick={onTryThis}
+            className="text-eco-green hover:text-eco-green/80 transition-colors"
+            title="Try this action"
+          >
+            <Check size={18} />
+          </button>
+        )}
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="text-eco-dark/50 hover:text-eco-dark/80 transition-colors"
+            title="Dismiss tip"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+      
+      <div className="flex items-start">
+        <div className="bg-eco-green/10 p-2 rounded-full mr-4 flex-shrink-0">
+          <Lightbulb className="text-eco-green" size={20} />
         </div>
+        
         <div>
-          <h3 className="text-sm font-medium mb-1">{styles.title}</h3>
-          <p className="text-eco-dark/80 text-sm">{tip}</p>
-          {children}
-          {source && (
-            <p className="text-xs text-eco-dark/60 mt-2">source: {source}</p>
+          <h3 className="font-medium text-lg mb-1">{title}</h3>
+          <p className="text-eco-dark/70 mb-3">{description}</p>
+          
+          <div className="flex flex-wrap gap-2 mt-2">
+            {impact && (
+              <span className="text-xs bg-eco-green/10 text-eco-green px-2 py-1 rounded-full">
+                {impact}
+              </span>
+            )}
+            
+            {category && (
+              <span className="text-xs bg-eco-cream px-2 py-1 rounded-full text-eco-dark/70">
+                {category}
+              </span>
+            )}
+          </div>
+          
+          {onTryThis && (
+            <button
+              onClick={onTryThis}
+              className="mt-4 text-sm text-eco-green flex items-center hover:underline"
+            >
+              <span>Try this action</span>
+              <ExternalLink size={14} className="ml-1" />
+            </button>
           )}
         </div>
       </div>

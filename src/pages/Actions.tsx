@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ActionCard from '../components/ActionCard';
+import EcoTip from '../components/EcoTip';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { 
   Check, X, PlusCircle, Train, Bus, Car, Bike, 
   Coffee, ShoppingBag, Utensils, Leaf, PenTool, Recycle,
   Droplets, LightbulbOff, ShowerHead, Sun, Wind, Trash2, Zap,
-  Loader2
+  Loader2, Info, Calendar, BarChart
 } from 'lucide-react';
 import actionsData, { Action, CATEGORIES } from '@/data/actionsData';
-import { getEcoActions, logUserAction, createEcoAction, createCustomEcoAction } from '@/services/ecoActionsService';
-import { EcoAction } from '@/types/database';
+import { getEcoActions, logUserAction, createEcoAction, createCustomEcoAction, initializeEcoActions, getUserActions } from '@/services/ecoActionsService';
+import { UserAction, EcoAction } from '@/types/database';
 import { toast } from 'sonner';
+
+// Define consistent category options
+const CATEGORY_OPTIONS = {
+  transportation: "Transportation",
+  waste: "Waste Reduction",
+  food: "Food",
+  energy: "Energy",
+  water: "Water",
+  custom: "Other"
+};
 
 // Create a union type that can handle both Action and EcoAction properties
 type ActionFormData = {
@@ -29,15 +40,65 @@ type ActionFormData = {
   buds_reward?: number;
 };
 
-// Define consistent category options
-const CATEGORY_OPTIONS = {
-  transportation: "Transportation",
-  waste: "Waste Reduction",
-  food: "Food",
-  energy: "Energy",
-  water: "Water",
-  custom: "Other"
+// Define the EcoTip type based on the ECO_TIPS array
+type EcoTipType = {
+  id: number;
+  title: string;
+  description: string;
+  impact: string;
+  category: string;
 };
+
+// Sample eco tips to show as suggestions
+const ECO_TIPS: EcoTipType[] = [
+  {
+    id: 1,
+    title: 'Used public transit',
+    description: 'Taking public transportation instead of driving alone can reduce your carbon footprint significantly.',
+    impact: '2.3 kg CO₂ saved per trip',
+    category: 'transportation'
+  },
+  {
+    id: 2,
+    title: 'Walked instead of drove',
+    description: 'Walking short distances instead of driving is not only good for the environment but also for your health.',
+    impact: '1.8 kg CO₂ saved per trip',
+    category: 'transportation'
+  },
+  {
+    id: 3,
+    title: 'Brought reusable mug',
+    description: 'Using a reusable mug for your coffee or tea can save hundreds of disposable cups from landfills each year.',
+    impact: '0.5 kg waste reduced',
+    category: 'waste'
+  },
+  {
+    id: 4,
+    title: 'Ate a meatless meal',
+    description: 'Plant-based meals typically have a much lower carbon footprint than meat-based ones.',
+    impact: '1.5 kg CO₂ saved per meal',
+    category: 'food'
+  },
+  {
+    id: 5,
+    title: 'Used natural lighting',
+    description: 'Taking advantage of natural light reduces electricity usage and creates a more pleasant environment.',
+    impact: '0.2 kg CO₂ saved per day',
+    category: 'energy'
+  },
+  {
+    id: 6,
+    title: 'Collected rainwater',
+    description: 'Collecting rainwater for plants conserves treated water and reduces your water footprint.',
+    impact: '50 L water saved',
+    category: 'water'
+  }
+];
+
+// Define a type for UserAction with eco_actions
+interface UserActionWithEcoAction extends UserAction {
+  eco_actions?: EcoAction;
+}
 
 const Actions = () => {
   const [showForm, setShowForm] = useState(false);
@@ -57,9 +118,32 @@ const Actions = () => {
   const [loadingActions, setLoadingActions] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   
+  // State for visible eco tips
+  const [visibleTips, setVisibleTips] = useState<EcoTipType[]>(ECO_TIPS);
+  
+  // State for user actions
+  const [userActions, setUserActions] = useState<UserActionWithEcoAction[]>([]);
+  
   // Fetch eco actions from Supabase
   useEffect(() => {
-    fetchEcoActions();
+    const loadEcoActions = async () => {
+      try {
+        // First try to initialize the eco_actions table if needed
+        const { success, error } = await initializeEcoActions();
+        if (!success) {
+          console.warn('Failed to initialize eco actions:', error);
+        }
+        
+        // Then fetch the actions
+        await fetchEcoActions();
+      } catch (err) {
+        console.error('Error in loadEcoActions:', err);
+        setActionError('Failed to load eco actions. Please try again later.');
+        setLoadingActions(false);
+      }
+    };
+    
+    loadEcoActions();
   }, []);
   
   // Move fetchEcoActions outside of useEffect so it can be called from elsewhere
@@ -94,8 +178,6 @@ const Actions = () => {
     // Convert the action to a compatible format
     const formattedAction: ActionFormData = action ? { ...action } : {};
     setFormAction(formattedAction);
-    
-    // Set individual form fields
     setFormTitle(formattedAction.title || '');
     setFormCategory(formattedAction.category || formattedAction.category_id || '');
     setFormNotes('');
@@ -149,39 +231,22 @@ const Actions = () => {
         } else {
           console.log('Successfully logged action:', data);
           toast.success('Eco action logged successfully!');
+          
+          // Refresh user actions
+          fetchUserActions();
+          
           closeForm();
         }
       } else {
-        // For custom actions, use the client-side approach
-        console.log('Creating custom action:', formTitle);
-        
-        const { data: newAction, error: createError } = await createCustomEcoAction(
-          formTitle,
-          formCategory,
-          formNotes
-        );
-        
-        if (createError) {
-          console.error('Error creating custom action:', createError);
-          toast.error('Failed to create custom action: ' + createError);
-          return;
-        }
-        
-        if (!newAction) {
-          console.error('No action data returned from createCustomEcoAction');
-          toast.error('Failed to create custom action: No data returned');
-          return;
-        }
-        
-        console.log('Successfully created custom action:', newAction);
-        
-        // Now log the newly created action
-        console.log('Logging custom action:', newAction.id);
+        // For custom actions, use the enhanced logUserAction with Gemini analysis
+        console.log('Logging custom action with Gemini analysis:', formTitle);
         
         const { data, error } = await logUserAction(
           user.id,
-          newAction.id,
-          formNotes || undefined
+          '', // Empty actionId for custom actions
+          formNotes || undefined,
+          formTitle, // Custom title
+          formCategory // Custom category
         );
         
         if (error) {
@@ -189,10 +254,17 @@ const Actions = () => {
           toast.error('Failed to log custom action: ' + error);
         } else {
           console.log('Successfully logged custom action:', data);
-          toast.success('Custom eco action logged successfully!');
           
-          // Refresh the actions list
+          // Show a success message with the buds earned
+          if (data) {
+            toast.success(`Eco action logged successfully! You earned ${data.buds_earned} buds.`);
+          } else {
+            toast.success('Eco action logged successfully!');
+          }
+          
+          // Refresh the actions list and user actions
           fetchEcoActions();
+          fetchUserActions();
           
           closeForm();
         }
@@ -204,7 +276,78 @@ const Actions = () => {
       setIsSubmitting(false);
     }
   };
-
+  
+  // Fetch user actions
+  const fetchUserActions = async () => {
+    if (!isSignedIn || !user) return;
+    
+    try {
+      const { data, error } = await getUserActions(user.id);
+      
+      if (error) {
+        console.error('Error fetching user actions:', error);
+      } else if (data) {
+        setUserActions(data as UserActionWithEcoAction[]);
+      }
+    } catch (err) {
+      console.error('Exception fetching user actions:', err);
+    }
+  };
+  
+  // Load eco actions and user actions
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // First try to initialize the eco_actions table if needed
+        const { success, error } = await initializeEcoActions();
+        if (!success) {
+          console.warn('Failed to initialize eco actions:', error);
+        }
+        
+        // Then fetch the actions
+        await fetchEcoActions();
+        
+        // And fetch user actions
+        if (isSignedIn && user) {
+          await fetchUserActions();
+        }
+      } catch (err) {
+        console.error('Error in loadData:', err);
+        setActionError('Failed to load data. Please try again later.');
+        setLoadingActions(false);
+      }
+    };
+    
+    loadData();
+  }, [isSignedIn, user]);
+  
+  // Handle closing a tip
+  const handleCloseTip = (tipId: number) => {
+    setVisibleTips(visibleTips.filter(tip => tip.id !== tipId));
+  };
+  
+  // Handle trying an action from a tip
+  const handleTryAction = (tip: EcoTipType) => {
+    tryEcoTip(tip);
+  };
+  
+  // Open form with eco tip data
+  const tryEcoTip = async (tip: EcoTipType) => {
+    const formattedTip: ActionFormData = {
+      title: tip.title,
+      impact: tip.impact,
+      category: tip.category,
+      description: tip.description
+    };
+    
+    setFormAction(formattedTip);
+    setFormTitle(tip.title);
+    setFormCategory(tip.category);
+    setFormNotes(tip.description);
+    setFormDate(new Date().toISOString().split('T')[0]);
+    setShowForm(true);
+  };
+  
   // If actions are still loading, show a loading state
   if (loadingActions) {
     return (
@@ -266,16 +409,11 @@ const Actions = () => {
           </motion.p>
         </div>
         
-        <Tabs defaultValue="all">
+        <Tabs defaultValue="my-actions">
           <div className="flex justify-between items-center mb-6">
             <TabsList className="bg-eco-cream">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="transportation">{CATEGORY_OPTIONS.transportation}</TabsTrigger>
-              <TabsTrigger value="waste">{CATEGORY_OPTIONS.waste}</TabsTrigger>
-              <TabsTrigger value="food">{CATEGORY_OPTIONS.food}</TabsTrigger>
-              <TabsTrigger value="energy">{CATEGORY_OPTIONS.energy}</TabsTrigger>
-              <TabsTrigger value="water">{CATEGORY_OPTIONS.water}</TabsTrigger>
-              <TabsTrigger value="custom">{CATEGORY_OPTIONS.custom}</TabsTrigger>
+              <TabsTrigger value="my-actions">My Actions</TabsTrigger>
+              <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
             </TabsList>
             
             <motion.button
@@ -289,98 +427,104 @@ const Actions = () => {
             </motion.button>
           </div>
           
-          <TabsContent value="all" className="mt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {supabaseActions ? (
-                // Display Supabase actions
-                supabaseActions.map((action) => (
-                  <ActionCard 
+          {/* My Actions Tab */}
+          <TabsContent value="my-actions" className="mt-0">
+            {loadingActions ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-eco-green" />
+                <span className="ml-2 text-eco-dark/70">Loading your actions...</span>
+              </div>
+            ) : userActions.length > 0 ? (
+              <div className="space-y-4">
+                {userActions.map((action) => (
+                  <motion.div
                     key={action.id}
-                    title={action.title}
-                    impact={action.impact}
-                    category={action.category_id || 'other'}
-                    icon={<Leaf size={18} className="text-eco-dark/80" />}
-                    onClick={() => openForm(action)}
-                  />
-                ))
-              ) : (
-                // Fallback to local data
-                Object.values(actionsData).flat().map((action) => (
-                  <ActionCard 
-                    key={action.id}
-                    title={action.title}
-                    impact={action.impact}
-                    category={action.category}
-                    icon={action.icon}
-                    completed={action.completed}
-                    onClick={() => openForm(action)}
-                  />
-                ))
-              )}
-              
-              <ActionCard 
-                title="Add custom action"
-                impact="Track your impact"
-                category={CATEGORIES.CUSTOM}
-                icon={<PenTool size={18} className="text-eco-dark/80" />}
-                onClick={() => openForm()}
-              />
-            </div>
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-lg p-4 shadow-sm border border-eco-lightGray/30"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium">
+                        {action.eco_actions?.title || 'Custom Action'}
+                      </h4>
+                      <span className="text-xs bg-eco-green/10 text-eco-green px-2 py-1 rounded-full">
+                        +{action.buds_earned} buds
+                      </span>
+                    </div>
+                    
+                    <div className="mt-2 text-sm text-eco-dark/70 flex flex-wrap gap-x-4 gap-y-2">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>
+                          {action.completed_at ? new Date(action.completed_at).toLocaleDateString() : 'Unknown date'}
+                        </span>
+                      </div>
+                      
+                      {action.eco_actions?.co2_saved > 0 && (
+                        <div className="flex items-center gap-1">
+                          <BarChart className="h-3.5 w-3.5" />
+                          <span>{action.eco_actions.co2_saved.toFixed(1)} kg CO₂ saved</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {action.notes && (
+                      <div className="mt-2 text-sm">
+                        <p className="text-eco-dark/80">{action.notes}</p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-eco-cream/50 rounded-lg p-6 text-center">
+                <Leaf className="h-10 w-10 mx-auto mb-3 text-eco-green/70" />
+                <h3 className="text-lg font-medium mb-1">No eco actions yet</h3>
+                <p className="text-eco-dark/70 mb-4">
+                  Start logging your sustainable actions to track your positive impact.
+                </p>
+                <button 
+                  className="bg-eco-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-eco-green/90 transition-colors"
+                  onClick={() => openForm()}
+                >
+                  Log Your First Action
+                </button>
+              </div>
+            )}
           </TabsContent>
           
-          {/* Category tabs - show either Supabase categories or local categories */}
-          {supabaseActions ? (
-            // Display Supabase categories
-            Object.keys(CATEGORY_OPTIONS).map((categoryKey) => (
-              <TabsContent key={categoryKey} value={categoryKey} className="mt-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {supabaseActions
-                    .filter(action => action.category_id === categoryKey)
-                    .map((action) => (
-                      <ActionCard 
-                        key={action.id}
-                        title={action.title}
-                        impact={action.impact}
-                        category={action.category_id || 'other'}
-                        icon={<Leaf size={18} className="text-eco-dark/80" />}
-                        onClick={() => openForm(action)}
-                      />
-                    ))
-                  }
-                  
-                  {/* Add custom action card to each category */}
-                  {categoryKey === 'custom' && (
-                    <ActionCard 
-                      title="Add custom action"
-                      impact="Track your impact"
-                      category={CATEGORIES.CUSTOM}
-                      icon={<PenTool size={18} className="text-eco-dark/80" />}
-                      onClick={() => openForm()}
-                    />
-                  )}
+          {/* Suggestions Tab */}
+          <TabsContent value="suggestions" className="mt-0">
+            <div className="space-y-4">
+              {visibleTips.map((tip) => (
+                <EcoTip
+                  key={tip.id}
+                  title={tip.title}
+                  description={tip.description}
+                  impact={tip.impact}
+                  category={CATEGORY_OPTIONS[tip.category as keyof typeof CATEGORY_OPTIONS]}
+                  onClose={() => handleCloseTip(tip.id)}
+                  onTryThis={() => handleTryAction(tip)}
+                />
+              ))}
+              
+              {visibleTips.length === 0 && (
+                <div className="bg-eco-cream/50 rounded-lg p-6 text-center">
+                  <Leaf className="h-10 w-10 mx-auto mb-3 text-eco-green/70" />
+                  <h3 className="text-lg font-medium mb-1">All suggestions dismissed</h3>
+                  <p className="text-eco-dark/70 mb-4">
+                    You've dismissed all the eco action suggestions. Refresh the page to see them again.
+                  </p>
+                  <button 
+                    className="bg-eco-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-eco-green/90 transition-colors"
+                    onClick={() => setVisibleTips(ECO_TIPS)}
+                  >
+                    Show Suggestions Again
+                  </button>
                 </div>
-              </TabsContent>
-            ))
-          ) : (
-            // Fallback to local categories
-            Object.keys(actionsData).map((category) => (
-              <TabsContent key={category} value={category} className="mt-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {actionsData[category].map((action) => (
-                    <ActionCard 
-                      key={action.id}
-                      title={action.title}
-                      impact={action.impact}
-                      category={action.category}
-                      icon={action.icon}
-                      completed={action.completed}
-                      onClick={() => openForm(action)}
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-            ))
-          )}
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
         
         {/* Action Form Modal */}

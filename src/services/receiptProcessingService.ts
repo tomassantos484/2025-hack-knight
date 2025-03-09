@@ -752,20 +752,22 @@ export const getReceiptItems = async (receiptId: string): Promise<ReceiptItem[]>
     
     // Check if the receipt_items table exists
     try {
-      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
-        'check_table_exists',
-        { table_name: 'receipt_items' }
-      );
+      // Instead of using an RPC function, we'll just try to query the table directly
+      // If the table doesn't exist, the query will fail
+      const { data: testQuery, error: testQueryError } = await supabase
+        .from('receipt_items')
+        .select('id')
+        .limit(1);
       
-      if (tableCheckError) {
-        console.error('Error checking if receipt_items table exists:', tableCheckError);
-        // Continue anyway, the query will fail if the table doesn't exist
-      } else if (!tableExists) {
+      if (testQueryError && testQueryError.code === '42P01') { // Table doesn't exist error code
         console.error('receipt_items table does not exist');
         throw new Error('receipt_items table does not exist');
+      } else if (testQueryError) {
+        console.error('Error checking receipt_items table:', testQueryError);
+        // Continue anyway, the query will fail if the table doesn't exist
       }
     } catch (tableCheckError) {
-      console.error('Error in check_table_exists RPC:', tableCheckError);
+      console.error('Error checking receipt_items table:', tableCheckError);
       // Continue anyway, we'll try the query directly
     }
     

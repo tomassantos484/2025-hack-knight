@@ -1,4 +1,6 @@
-#!/Users/hinnazeejah/2025-hack-knight/.venv/bin/python
+#!/bin/sh
+'''exec' "/Users/themi/Desktop/2025 Hack Knight/.venv/bin/python3.13" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

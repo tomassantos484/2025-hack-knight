@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-const API_BASE_URL = 'http://127.0.0.1:5002';  // Updated to use port 5002 for the new API
+const API_BASE_URL = 'http://127.0.0.1:5002';  // Updated to use port 5002 for the Flask server
 
 // Define the response type
 export interface TrashScanResult {
@@ -9,6 +9,9 @@ export interface TrashScanResult {
   confidence: number;
   details: string;
   tips: string[];
+  environmental_impact?: string;
+  buds_reward: number;
+  offline_mode?: boolean;
 }
 
 /**

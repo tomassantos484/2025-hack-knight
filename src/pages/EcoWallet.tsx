@@ -2,19 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { Wallet, Leaf, Gift, TreePine, Waves, Badge, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt } from 'lucide-react';
+import { Wallet, Leaf, Gift, TreePine, Waves, Badge as BadgeIcon, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBudsBalance, getTransactions, spendBuds, Transaction as WalletTransaction } from '../services/walletService';
+import { getAllBadges, getUserBadges, awardBadge, Badge as BadgeType } from '../services/badgeService';
+import { Link } from 'react-router-dom';
+import { supabase } from '../services/supabaseClient';
+import { formatUuid } from '../services/ecoActionsService';
 
 // Interface for redemption items
 interface RedemptionItem {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
   budsCost: number;
-  image: string;
+  image?: string;
   category: 'badge' | 'merch' | 'donation';
   icon: React.ReactNode;
+  badge?: BadgeType;
 }
 
 const EcoWallet = () => {
@@ -33,76 +38,136 @@ const EcoWallet = () => {
   // State for transaction history
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   
+  // State for redemption items
+  const [redemptionItems, setRedemptionItems] = useState<RedemptionItem[]>([]);
+  
+  // State for user badges
+  const [userBadges, setUserBadges] = useState<string[]>([]);
+  
+  // State for loading
+  const [loading, setLoading] = useState<boolean>(true);
+  
   // Load user data on component mount
   useEffect(() => {
     const loadUserData = async () => {
       if (isSignedIn && user) {
         try {
-          // Get user's Buds balance
-          const balance = await getBudsBalance(user.id);
-          setBudsBalance(balance);
+          setLoading(true);
           
-          // Get user's transaction history
+          // Get user's transaction history first
           const txHistory = await getTransactions(user.id);
           setTransactions(txHistory);
+          
+          // Calculate balance directly from transactions
+          const calculatedBalance = txHistory.reduce((total, tx) => {
+            console.log(`Transaction: ${tx.description}, Type: ${tx.type}, Amount: ${tx.amount}, Running Total: ${total}`);
+            if (tx.type === 'earned') {
+              return total + tx.amount;
+            } else if (tx.type === 'spent') {
+              return total - tx.amount;
+            }
+            return total;
+          }, 0);
+          
+          console.log(`Final calculated balance: ${calculatedBalance}`);
+          
+          // Set the calculated balance
+          setBudsBalance(calculatedBalance);
+          
+          // Also update the balance in the database to fix any discrepancies
+          try {
+            // Use the RPC function to ensure consistency with how other parts of the app update the balance
+            const { error } = await supabase.rpc('fix_user_buds_balance', {
+              p_user_id: formatUuid(user.id),
+              p_correct_balance: calculatedBalance
+            });
+            
+            if (error) {
+              console.error('Error updating buds balance in database:', error);
+              
+              // Fallback to direct update if RPC fails
+              const { error: updateError } = await supabase
+                .from('user_stats')
+                .update({ buds_earned: calculatedBalance })
+                .eq('user_id', formatUuid(user.id));
+              
+              if (updateError) {
+                console.error('Error with fallback update of buds balance:', updateError);
+              }
+            }
+          } catch (updateError) {
+            console.error('Error updating buds balance:', updateError);
+          }
+          
+          // Get all available badges
+          const { data: badges, error: badgesError } = await getAllBadges();
+          
+          if (badgesError) {
+            console.error('Error fetching badges:', badgesError);
+          }
+          
+          // Get user's badges
+          const { data: userBadgesData, error: userBadgesError } = await getUserBadges(user.id);
+          
+          if (userBadgesError) {
+            console.error('Error fetching user badges:', userBadgesError);
+          }
+          
+          // Create a list of badge IDs the user already has
+          const userBadgeIds = userBadgesData?.map(ub => ub.badge_id) || [];
+          setUserBadges(userBadgeIds);
+          
+          // Create redemption items from badges
+          const badgeItems: RedemptionItem[] = badges?.map(badge => ({
+            id: badge.id,
+            name: badge.name,
+            description: badge.description,
+            budsCost: badge.buds_reward,
+            category: 'badge',
+            icon: <BadgeIcon size={24} className="text-eco-green" />,
+            badge: badge
+          })) || [];
+          
+          // Add other redemption items
+          const otherItems: RedemptionItem[] = [
+            {
+              id: 'merch-1',
+              name: 'Recycled Plastic Bracelet',
+              description: 'Handmade bracelet from ocean-bound plastic',
+              budsCost: 200,
+              category: 'merch',
+              icon: <ShoppingBag size={24} className="text-eco-green" />
+            },
+            {
+              id: 'donation-1',
+              name: 'Plant a Tree',
+              description: 'We\'ll plant a tree in a deforested area',
+              budsCost: 150,
+              category: 'donation',
+              icon: <TreePine size={24} className="text-eco-green" />
+            },
+            {
+              id: 'donation-2',
+              name: 'Ocean Cleanup Donation',
+              description: 'Help remove 1 lb of plastic from the ocean',
+              budsCost: 175,
+              category: 'donation',
+              icon: <Waves size={24} className="text-eco-green" />
+            }
+          ];
+          
+          setRedemptionItems([...badgeItems, ...otherItems]);
         } catch (error) {
           console.error('Error loading user data:', error);
           toast.error('Failed to load your Buds balance and transaction history.');
+        } finally {
+          setLoading(false);
         }
       }
     };
     
     loadUserData();
   }, [isSignedIn, user]);
-  
-  // Redemption items
-  const redemptionItems: RedemptionItem[] = [
-    {
-      id: 1,
-      name: 'Early Adopter Badge',
-      description: 'Show off your early commitment to sustainability',
-      budsCost: 50,
-      image: '/placeholder.svg',
-      category: 'badge',
-      icon: <Badge size={24} className="text-eco-green" />
-    },
-    {
-      id: 2,
-      name: 'Waste Warrior Badge',
-      description: 'Earned by properly recycling 50+ items',
-      budsCost: 100,
-      image: '/placeholder.svg',
-      category: 'badge',
-      icon: <Badge size={24} className="text-eco-green" />
-    },
-    {
-      id: 3,
-      name: 'Recycled Plastic Bracelet',
-      description: 'Handmade bracelet from ocean-bound plastic',
-      budsCost: 200,
-      image: '/placeholder.svg',
-      category: 'merch',
-      icon: <ShoppingBag size={24} className="text-eco-green" />
-    },
-    {
-      id: 4,
-      name: 'Plant a Tree',
-      description: 'We\'ll plant a tree in a deforested area',
-      budsCost: 150,
-      image: '/placeholder.svg',
-      category: 'donation',
-      icon: <TreePine size={24} className="text-eco-green" />
-    },
-    {
-      id: 5,
-      name: 'Ocean Cleanup Donation',
-      description: 'Help remove 1 lb of plastic from the ocean',
-      budsCost: 175,
-      image: '/placeholder.svg',
-      category: 'donation',
-      icon: <Waves size={24} className="text-eco-green" />
-    }
-  ];
   
   // Filter redemption items by category
   const filteredItems = selectedCategory === 'all' 
@@ -117,7 +182,38 @@ const EcoWallet = () => {
     }
     
     try {
-      // Spend Buds using our wallet service
+      // Check if this is a badge and if the user already has it
+      if (item.category === 'badge' && item.badge) {
+        if (userBadges.includes(item.badge.id)) {
+          toast.error('You already have this badge!');
+          return;
+        }
+        
+        // Award the badge directly
+        const { success, error } = await awardBadge(user.id, item.badge.name);
+        
+        if (success) {
+          // Update local state
+          setUserBadges([...userBadges, item.badge.id]);
+          
+          // No need to spend buds as the badge award function handles that
+          toast.success(`Badge earned: ${item.name}`);
+          
+          // Refresh user data
+          const balance = await getBudsBalance(user.id);
+          setBudsBalance(balance);
+          
+          const txHistory = await getTransactions(user.id);
+          setTransactions(txHistory);
+          
+          return;
+        } else {
+          toast.error(`Failed to earn badge: ${error}`);
+          return;
+        }
+      }
+      
+      // For non-badge items, spend buds
       const success = await spendBuds(
         user.id,
         item.budsCost,
@@ -131,6 +227,10 @@ const EcoWallet = () => {
         // Refresh transaction history
         const updatedTransactions = await getTransactions(user.id);
         setTransactions(updatedTransactions);
+        
+        toast.success(`Successfully redeemed: ${item.name}`);
+      } else {
+        toast.error('Failed to redeem item. You may not have enough Buds.');
       }
     } catch (error) {
       console.error('Error redeeming item:', error);
@@ -150,8 +250,20 @@ const EcoWallet = () => {
     return 'text-eco-green';
   };
   
-  // Routes to earn more Buds
+  // Ways to earn more Buds
   const budEarningActions = [
+    {
+      name: 'Log Eco Actions',
+      description: 'Record your daily eco-friendly activities',
+      icon: <Leaf size={24} className="text-eco-green" />,
+      path: '/actions'
+    },
+    {
+      name: 'Earn Badges',
+      description: 'Complete challenges to earn special badges',
+      icon: <Award size={24} className="text-eco-green" />,
+      path: '/profile'
+    },
     {
       name: 'Scan Receipts',
       description: 'Upload receipts for eco-friendly purchases',
@@ -193,194 +305,230 @@ const EcoWallet = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-gradient-to-r from-eco-green to-eco-green/80 rounded-xl p-6 text-white mb-8 eco-shadow"
+          className="glass-card p-6 mb-8 rounded-xl"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
-              <h2 className="text-lg font-medium mb-1">Your Buds Balance</h2>
-              <p className="text-3xl font-bold flex items-center">
-                <Leaf size={24} className="mr-2" />
-                {budsBalance} Buds
-              </p>
-              <p className="text-sm mt-2 text-white/80">
-                Earn more Buds by logging eco actions and scanning receipts
+              <h2 className="text-xl font-medium mb-2">Your Balance</h2>
+              <div className="text-3xl font-bold text-eco-green flex items-center">
+                <Leaf className="mr-2" />
+                {loading ? (
+                  <div className="h-8 w-24 bg-gray-200 animate-pulse rounded"></div>
+                ) : (
+                  <>{budsBalance} Buds</>
+                )}
+              </div>
+              <p className="text-sm text-eco-dark/60 mt-1">
+                Buds are earned through eco-friendly actions
               </p>
             </div>
             
-            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-              <button 
+            <div className="mt-4 md:mt-0 flex flex-col space-y-2">
+              <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg flex items-center transition-colors"
+                className="flex items-center text-eco-green hover:text-eco-green/80 transition-colors"
               >
-                <History size={18} className="mr-2" />
-                Transaction History
+                <History size={18} className="mr-1" />
+                {showHistory ? 'Hide' : 'View'} Transaction History
               </button>
               
-              <button 
+              <button
                 onClick={handleConnectBank}
-                className="px-4 py-2 bg-white text-eco-green rounded-lg flex items-center hover:bg-white/90 transition-colors"
+                className="flex items-center text-eco-green hover:text-eco-green/80 transition-colors"
               >
-                <CreditCard size={18} className="mr-2" />
+                <CreditCard size={18} className="mr-1" />
                 Connect Bank Account
               </button>
             </div>
           </div>
+          
+          {/* Transaction History */}
+          {showHistory ? (
+            <div className="mt-6 border-t border-eco-light pt-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <History size={20} className="mr-2 text-eco-green" />
+                Transaction History
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="ml-auto text-sm text-eco-green hover:text-eco-green/80 transition-colors"
+                >
+                  Hide
+                </button>
+              </h3>
+              
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-12 bg-gray-200 animate-pulse rounded"></div>
+                  ))}
+                </div>
+              ) : transactions.length > 0 ? (
+                <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hidden">
+                  {transactions.map((tx, index) => (
+                    <div 
+                      key={tx.id} 
+                      className="flex justify-between items-center p-3 rounded hover:bg-eco-light/20 transition-colors"
+                    >
+                      <div>
+                        <p className="font-medium">{tx.description}</p>
+                        <p className="text-sm text-eco-dark/60">{new Date(tx.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className={`font-bold ${tx.type === 'earned' ? 'text-eco-green' : 'text-red-500'}`}>
+                        {tx.type === 'earned' ? '+' : '-'}{tx.amount} Buds
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-eco-dark/60">No transactions yet. Start earning Buds by logging eco actions!</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowHistory(true)}
+              className="mt-4 w-full py-2 px-4 bg-eco-light/30 hover:bg-eco-light/50 rounded-lg flex items-center justify-center text-eco-green transition-colors"
+            >
+              <History size={18} className="mr-2" />
+              View Transaction History
+            </button>
+          )}
         </motion.div>
-        
-        {/* Transaction History */}
-        {showHistory && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-8 bg-white rounded-xl p-6 eco-shadow"
-          >
-            <h2 className="text-xl font-medium mb-4">Transaction History</h2>
-            
-            {transactions.length === 0 ? (
-              <div className="text-center py-8 text-eco-dark/70">
-                <History size={48} className="mx-auto mb-4 text-eco-dark/30" />
-                <p>No transactions yet. Start earning and spending Buds!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {transactions.map(transaction => (
-                  <div 
-                    key={transaction.id}
-                    className="flex justify-between items-center p-3 border-b border-gray-100"
-                  >
-                    <div>
-                      <p className="font-medium">{transaction.description}</p>
-                      <p className="text-sm text-eco-dark/70">{transaction.date}</p>
-                    </div>
-                    <div className={`font-medium ${transaction.type === 'earned' ? 'text-eco-green' : 'text-red-500'}`}>
-                      {transaction.type === 'earned' ? '+' : '-'}{transaction.amount} Buds
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
         
         {/* Ways to Earn Buds */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-8 bg-white rounded-xl p-6 eco-shadow"
+          className="glass-card p-6 mb-8 rounded-xl"
         >
           <h2 className="text-xl font-medium mb-4">Ways to Earn Buds</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {budEarningActions.map((action, index) => (
-              <a
+              <Link
                 key={index}
-                href={action.path}
-                className="p-4 bg-eco-cream hover:bg-eco-green/10 rounded-lg flex items-start transition-colors"
+                to={action.path}
+                className="p-4 border border-eco-light rounded-lg hover:bg-eco-light/10 transition-colors flex flex-col items-center text-center"
               >
-                <div className="mr-4 mt-1">{action.icon}</div>
-                <div>
-                  <h3 className="font-medium">{action.name}</h3>
-                  <p className="text-sm text-eco-dark/70">{action.description}</p>
+                <div className="mb-2 p-3 bg-eco-light/20 rounded-full">
+                  {action.icon}
                 </div>
-              </a>
+                <h3 className="font-medium mb-1">{action.name}</h3>
+                <p className="text-sm text-eco-dark/60">{action.description}</p>
+              </Link>
             ))}
           </div>
         </motion.div>
         
-        {/* Redemption Options */}
-        <div className="mb-6">
+        {/* Redemption Items */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass-card p-6 rounded-xl"
+        >
           <h2 className="text-xl font-medium mb-4">Redeem Your Buds</h2>
           
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            <button 
+          {/* Category Filters */}
+          <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hidden">
+            <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-4 py-2 rounded-lg text-sm ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 selectedCategory === 'all' 
                   ? 'bg-eco-green text-white' 
-                  : 'bg-eco-cream text-eco-dark hover:bg-eco-green/10'
+                  : 'bg-eco-light/30 hover:bg-eco-light/50'
               }`}
             >
               All
             </button>
-            <button 
+            <button
               onClick={() => setSelectedCategory('badge')}
-              className={`px-4 py-2 rounded-lg text-sm flex items-center ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
                 selectedCategory === 'badge' 
                   ? 'bg-eco-green text-white' 
-                  : 'bg-eco-cream text-eco-dark hover:bg-eco-green/10'
+                  : 'bg-eco-light/30 hover:bg-eco-light/50'
               }`}
             >
-              <Badge size={16} className="mr-2" />
-              Digital Badges
+              <BadgeIcon size={16} className="mr-1" />
+              Badges
             </button>
-            <button 
+            <button
               onClick={() => setSelectedCategory('merch')}
-              className={`px-4 py-2 rounded-lg text-sm flex items-center ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
                 selectedCategory === 'merch' 
                   ? 'bg-eco-green text-white' 
-                  : 'bg-eco-cream text-eco-dark hover:bg-eco-green/10'
+                  : 'bg-eco-light/30 hover:bg-eco-light/50'
               }`}
             >
-              <ShoppingBag size={16} className="mr-2" />
-              Eco Merch
+              <ShoppingBag size={16} className="mr-1" />
+              Merchandise
             </button>
-            <button 
+            <button
               onClick={() => setSelectedCategory('donation')}
-              className={`px-4 py-2 rounded-lg text-sm flex items-center ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
                 selectedCategory === 'donation' 
                   ? 'bg-eco-green text-white' 
-                  : 'bg-eco-cream text-eco-dark hover:bg-eco-green/10'
+                  : 'bg-eco-light/30 hover:bg-eco-light/50'
               }`}
             >
-              <TreePine size={16} className="mr-2" />
+              <Gift size={16} className="mr-1" />
               Donations
             </button>
           </div>
           
-          {/* Redemption Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredItems.map(item => (
-              <motion.div
-                key={item.id}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-xl overflow-hidden eco-shadow"
-              >
-                <div className="aspect-video bg-eco-light/30 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-eco-green/10 flex items-center justify-center">
-                    {item.icon}
-                  </div>
-                </div>
+          {/* Items Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-48 bg-gray-200 animate-pulse rounded-lg"></div>
+              ))}
+            </div>
+          ) : filteredItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredItems.map((item) => {
+                const isOwned = item.category === 'badge' && item.badge && userBadges.includes(item.badge.id);
                 
-                <div className="p-4">
-                  <h3 className="font-medium mb-1">{item.name}</h3>
-                  <p className="text-sm text-eco-dark/70 mb-4">{item.description}</p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm font-medium text-eco-green">
-                      <Leaf size={16} className="mr-1" />
-                      {item.budsCost} Buds
+                return (
+                  <div 
+                    key={item.id}
+                    className={`border border-eco-light rounded-lg overflow-hidden transition-all ${
+                      isOwned ? 'bg-eco-light/10' : 'hover:shadow-md'
+                    }`}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center mb-2">
+                        <div className="p-2 bg-eco-light/20 rounded-full mr-3">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{item.name}</h3>
+                          <p className="text-sm text-eco-green">{item.budsCost} Buds</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-eco-dark/70 mb-4">{item.description}</p>
+                      <button
+                        onClick={() => handleRedeem(item)}
+                        disabled={budsBalance < item.budsCost || isOwned}
+                        className={`w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center ${
+                          budsBalance >= item.budsCost && !isOwned
+                            ? 'bg-eco-green text-white hover:bg-eco-green/90'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {isOwned ? 'Already Owned' : budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
+                        {!isOwned && budsBalance >= item.budsCost && <ArrowRight size={16} className="ml-1" />}
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={() => handleRedeem(item)}
-                      disabled={budsBalance < item.budsCost}
-                      className={`px-3 py-1.5 rounded-lg text-sm flex items-center ${
-                        budsBalance >= item.budsCost
-                          ? 'bg-eco-green text-white hover:bg-eco-green/90'
-                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
-                    </button>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-center text-eco-dark/60 py-8">No items available in this category.</p>
+          )}
+        </motion.div>
       </div>
     </DashboardLayout>
   );

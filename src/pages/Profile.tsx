@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut, Leaf } from 'lucide-react';
+import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut, Leaf, RefreshCw } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ActionHistory from '../components/ActionHistory';
 import { supabase } from '../services/supabaseClient';
-import { formatUuid } from '../services/ecoActionsService';
+import { formatUuid, refreshUserStats } from '../services/ecoActionsService';
+import { Badge, UserBadge, getUserBadges, checkAndAwardBadges, awardBadge } from '../services/badgeService';
 
 const Profile = () => {
   const { signOut, isSignedIn } = useAuth();
@@ -24,6 +25,9 @@ const Profile = () => {
     budsEarned: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [refreshingStats, setRefreshingStats] = useState(false);
+  const [badges, setBadges] = useState<(Badge & { earned: boolean, date?: string | null })[]>([]);
+  const [loadingBadges, setLoadingBadges] = useState(true);
   
   // Debug log for authentication state
   useEffect(() => {
@@ -69,35 +73,88 @@ const Profile = () => {
             actions: statsData.total_actions_completed || 0,
             co2Saved: statsData.total_carbon_footprint || 0,
             wasteRecycled: 0, // Not tracked in the database yet
-            budsEarned: statsData.total_buds_earned || 0
+            budsEarned: statsData.buds_earned || 0
+          });
+          
+          // Refresh user stats in the background to ensure they're up-to-date
+          // This will help fix any discrepancies between the displayed stats and the actual data
+          refreshUserStats(user.id).then(({ success, error }) => {
+            if (success) {
+              console.log('User stats refreshed successfully');
+              // Fetch the updated stats
+              supabase
+                .from('user_stats')
+                .select('*')
+                .eq('user_id', formattedUserId)
+                .maybeSingle()
+                .then(({ data: refreshedData, error: refreshError }) => {
+                  if (!refreshError && refreshedData) {
+                    // Update the UI with the refreshed stats
+                    setUserStats({
+                      streak: 0,
+                      actions: refreshedData.total_actions_completed || 0,
+                      co2Saved: refreshedData.total_carbon_footprint || 0,
+                      wasteRecycled: 0,
+                      budsEarned: refreshedData.buds_earned || 0
+                    });
+                  }
+                });
+            } else if (error) {
+              console.error('Error refreshing user stats:', error);
+            }
           });
         }
         
         // If no stats found, try to calculate them from user actions
         if (!statsData) {
-          const { data: actionsData, error: actionsError } = await supabase
-            .from('user_actions')
-            .select('*, eco_actions(co2_saved)')
-            .eq('user_id', formattedUserId);
+          // Refresh user stats to create them if they don't exist
+          const { success, error } = await refreshUserStats(user.id);
           
-          if (actionsError) {
-            console.error('Error fetching user actions:', actionsError);
-          } else if (actionsData && actionsData.length > 0) {
-            // Calculate stats from actions
-            const totalActions = actionsData.length;
-            const totalBudsEarned = actionsData.reduce((sum, action) => sum + (action.buds_earned || 0), 0);
-            const totalCO2Saved = actionsData.reduce((sum, action) => {
-              const co2Saved = action.eco_actions?.co2_saved || 0;
-              return sum + co2Saved;
-            }, 0);
+          if (success) {
+            // Fetch the newly created stats
+            const { data: newStatsData, error: newStatsError } = await supabase
+              .from('user_stats')
+              .select('*')
+              .eq('user_id', formattedUserId)
+              .maybeSingle();
             
-            setUserStats({
-              streak: 0,
-              actions: totalActions,
-              co2Saved: totalCO2Saved,
-              wasteRecycled: 0,
-              budsEarned: totalBudsEarned
-            });
+            if (!newStatsError && newStatsData) {
+              setUserStats({
+                streak: 0,
+                actions: newStatsData.total_actions_completed || 0,
+                co2Saved: newStatsData.total_carbon_footprint || 0,
+                wasteRecycled: 0,
+                budsEarned: newStatsData.buds_earned || 0
+              });
+            } else {
+              // Fall back to calculating stats from actions
+              const { data: actionsData, error: actionsError } = await supabase
+                .from('user_actions')
+                .select('*, eco_actions(co2_saved)')
+                .eq('user_id', formattedUserId);
+              
+              if (actionsError) {
+                console.error('Error fetching user actions:', actionsError);
+              } else if (actionsData && actionsData.length > 0) {
+                // Calculate stats from actions
+                const totalActions = actionsData.length;
+                const totalBudsEarned = actionsData.reduce((sum, action) => sum + (action.buds_earned || 0), 0);
+                const totalCO2Saved = actionsData.reduce((sum, action) => {
+                  const co2Saved = action.eco_actions?.co2_saved || 0;
+                  return sum + co2Saved;
+                }, 0);
+                
+                setUserStats({
+                  streak: 0,
+                  actions: totalActions,
+                  co2Saved: totalCO2Saved,
+                  wasteRecycled: 0,
+                  budsEarned: totalBudsEarned
+                });
+              }
+            }
+          } else {
+            console.error('Error refreshing user stats:', error);
           }
         }
       } catch (error) {
@@ -108,6 +165,62 @@ const Profile = () => {
     };
     
     fetchUserStats();
+  }, [isSignedIn, user]);
+  
+  // Fetch user badges
+  useEffect(() => {
+    const fetchUserBadges = async () => {
+      if (!isSignedIn || !user) return;
+      
+      try {
+        setLoadingBadges(true);
+        
+        // Check for and award badges based on user actions
+        await checkAndAwardBadges(user.id);
+        
+        // Get user badges
+        const { data: userBadges, error } = await getUserBadges(user.id);
+        
+        if (error) {
+          console.error('Error fetching user badges:', error);
+          return;
+        }
+        
+        if (!userBadges || userBadges.length === 0) {
+          // If no badges found, award the Early Adopter badge
+          const { success } = await awardBadge(user.id, 'Early Adopter');
+          if (success) {
+            // Fetch badges again after awarding
+            const { data: updatedBadges } = await getUserBadges(user.id);
+            if (updatedBadges) {
+              // Format badges for display
+              const formattedBadges = updatedBadges.map(userBadge => ({
+                ...userBadge.badge!,
+                earned: true,
+                date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
+              }));
+              
+              setBadges(formattedBadges);
+            }
+          }
+        } else {
+          // Format badges for display
+          const formattedBadges = userBadges.map(userBadge => ({
+            ...userBadge.badge!,
+            earned: true,
+            date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
+          }));
+          
+          setBadges(formattedBadges);
+        }
+      } catch (err) {
+        console.error('Error in fetchUserBadges:', err);
+      } finally {
+        setLoadingBadges(false);
+      }
+    };
+    
+    fetchUserBadges();
   }, [isSignedIn, user]);
   
   // Format the user's creation date for display
@@ -169,60 +282,6 @@ const Profile = () => {
     };
   };
   
-  // Generate badges based on user data
-  const getBadges = () => {
-    return [
-      {
-        id: 1,
-        name: 'Early Adopter',
-        description: 'Joined during the beta phase',
-        icon: '🌱',
-        earned: true, // Only badge earned by default for new users
-        date: formatBadgeDate()
-      },
-      {
-        id: 2,
-        name: 'Waste Warrior',
-        description: 'Recycled 50+ items correctly',
-        icon: '♻️',
-        earned: false, // Locked for new users
-        date: null
-      },
-      {
-        id: 3,
-        name: 'Eco Streak',
-        description: 'Maintained a 7-day action streak',
-        icon: '🔥',
-        earned: false, // Locked for new users
-        date: null
-      },
-      {
-        id: 4,
-        name: 'Transit Champion',
-        description: 'Used public transit 10+ times',
-        icon: '🚊',
-        earned: false
-      },
-      {
-        id: 5,
-        name: 'Plant Power',
-        description: 'Logged 15 meatless meals',
-        icon: '🥗',
-        earned: false
-      },
-      {
-        id: 6,
-        name: 'Energy Saver',
-        description: 'Reduced energy usage for 30 days',
-        icon: '⚡',
-        earned: false
-      }
-    ];
-  };
-  
-  // Get badges with user-specific data
-  const badges = getBadges();
-  
   // Generate challenges based on user data
   const getChallenges = () => {
     // For new users, show no challenges yet
@@ -243,6 +302,49 @@ const Profile = () => {
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out. Please try again.');
+    }
+  };
+
+  // Handle manual refresh of user stats
+  const handleRefreshStats = async () => {
+    if (!user) return;
+    
+    try {
+      setRefreshingStats(true);
+      toast.info('Refreshing your stats...');
+      
+      const { success, error } = await refreshUserStats(user.id);
+      
+      if (success) {
+        // Fetch the updated stats
+        const formattedUserId = formatUuid(user.id);
+        const { data: refreshedData, error: refreshError } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', formattedUserId)
+          .maybeSingle();
+        
+        if (!refreshError && refreshedData) {
+          // Update the UI with the refreshed stats
+          setUserStats({
+            streak: 0,
+            actions: refreshedData.total_actions_completed || 0,
+            co2Saved: refreshedData.total_carbon_footprint || 0,
+            wasteRecycled: 0,
+            budsEarned: refreshedData.buds_earned || 0
+          });
+          toast.success('Stats refreshed successfully!');
+        } else {
+          toast.error('Failed to fetch updated stats');
+        }
+      } else {
+        toast.error(`Failed to refresh stats: ${error}`);
+      }
+    } catch (err) {
+      console.error('Error in handleRefreshStats:', err);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setRefreshingStats(false);
     }
   };
 
@@ -324,6 +426,16 @@ const Profile = () => {
                   <span className="font-medium">{userStats.streak} days</span>
                   <span className="text-eco-dark/70 ml-1">streak</span>
                 </div>
+                
+                <button
+                  onClick={handleRefreshStats}
+                  disabled={refreshingStats}
+                  className="text-xs flex items-center gap-1 text-eco-green hover:text-eco-green/80 transition-colors"
+                  title="Refresh stats"
+                >
+                  <RefreshCw size={14} className={`${refreshingStats ? 'animate-spin' : ''}`} />
+                  <span>{refreshingStats ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
               </motion.div>
             </div>
           </div>
@@ -347,49 +459,53 @@ const Profile = () => {
           
           <TabsContent value="badges" className="mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {badges.map((badge) => (
-                <motion.div
-                  key={badge.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: badge.id * 0.1 }}
-                  className={`p-5 rounded-xl ${
-                    badge.earned 
-                      ? 'glass-card' 
-                      : 'border border-dashed border-eco-dark/20 bg-eco-cream/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl ${
-                      badge.earned ? 'bg-eco-green/10' : 'bg-eco-dark/10'
-                    }`}>
+              {loadingBadges ? (
+                // Loading state for badges
+                Array.from({ length: 6 }).map((_, index) => (
+                  <motion.div
+                    key={`badge-skeleton-${index}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + (index * 0.05) }}
+                    className="p-5 rounded-xl border border-dashed border-eco-dark/20 bg-eco-cream/50"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-eco-cream/70 mb-3 animate-pulse"></div>
+                    <div className="h-5 bg-eco-cream/70 rounded w-2/3 mb-2 animate-pulse"></div>
+                    <div className="h-4 bg-eco-cream/70 rounded w-full mb-3 animate-pulse"></div>
+                    <div className="h-4 bg-eco-cream/70 rounded w-1/3 animate-pulse"></div>
+                  </motion.div>
+                ))
+              ) : badges.length > 0 ? (
+                // Display earned badges
+                badges.map((badge) => (
+                  <motion.div
+                    key={badge.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="p-5 rounded-xl glass-card"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-eco-green/10 flex items-center justify-center text-2xl mb-3">
                       {badge.icon}
                     </div>
-                    
-                    {badge.earned && (
-                      <span className="text-xs px-2 py-0.5 bg-eco-green/10 text-eco-green rounded-full">
-                        Earned
-                      </span>
-                    )}
-                    
-                    {!badge.earned && (
-                      <span className="text-xs px-2 py-0.5 bg-eco-dark/10 text-eco-dark/50 rounded-full">
-                        Locked
-                      </span>
-                    )}
-                  </div>
-                  
-                  <h3 className="mt-3 font-medium">{badge.name}</h3>
-                  <p className="text-sm text-eco-dark/70 mt-1">{badge.description}</p>
-                  
-                  {badge.earned && badge.date && (
-                    <div className="mt-3 text-xs text-eco-dark/50 flex items-center gap-1">
-                      <Calendar size={12} />
-                      Earned {badge.date}
+                    <h3 className="text-lg font-medium mb-1">{badge.name}</h3>
+                    <p className="text-sm text-eco-dark/70 mb-3">{badge.description}</p>
+                    <div className="flex items-center text-xs text-eco-green">
+                      <Trophy size={12} className="mr-1" />
+                      <span>Earned {badge.date || 'recently'}</span>
                     </div>
-                  )}
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              ) : (
+                // No badges yet
+                <div className="col-span-full p-8 text-center bg-eco-cream/30 rounded-xl">
+                  <Trophy size={40} className="mx-auto mb-4 text-eco-dark/30" />
+                  <h3 className="text-lg font-medium mb-2">No Badges Yet</h3>
+                  <p className="text-eco-dark/70 mb-4">
+                    Complete eco-friendly actions to earn badges and rewards!
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="mt-8 bg-eco-green/5 border border-eco-green/20 rounded-xl p-5">

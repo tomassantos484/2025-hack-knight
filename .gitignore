@@ -45,3 +45,14 @@ next-env.d.ts
 
 # .venv
 .venv/
+
+# sql
+*.sql
+
+#pycache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz

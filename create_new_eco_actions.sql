@@ -31,18 +31,20 @@ CREATE TABLE user_actions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create user_stats table
-CREATE TABLE user_stats (
+-- Create user_stats table if it doesn't exist
+CREATE TABLE IF NOT EXISTS user_stats (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id),
     total_actions_completed INTEGER DEFAULT 0,
-    total_carbon_footprint NUMERIC DEFAULT 0,
-    total_buds_earned INTEGER DEFAULT 0,
+    total_carbon_footprint DECIMAL(10, 2) DEFAULT 0,
+    buds_earned INTEGER DEFAULT 0,
     total_buds_spent INTEGER DEFAULT 0,
-    eco_friendly_percentage NUMERIC DEFAULT 0,
-    average_eco_score NUMERIC DEFAULT 0,
+    eco_friendly_percentage INTEGER DEFAULT 0,
+    average_eco_score INTEGER DEFAULT 0,
+    streak_days INTEGER DEFAULT 0,
+    last_action_date TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CONSTRAINT user_stats_user_id_key UNIQUE (user_id)
+    UNIQUE(user_id)
 );
 
 -- Create indexes for faster lookups

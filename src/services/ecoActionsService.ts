@@ -1,6 +1,8 @@
 import { supabase } from '../services/supabaseClient';
 import { EcoAction, UserAction } from '@/types/database';
 import { v4 as uuidv4 } from 'uuid';
+import { analyzeEcoAction } from './geminiService';
+import { checkAndAwardBadges } from './badgeService';
 
 // Map of category names to UUIDs
 const CATEGORY_IDS: Record<string, string> = {
@@ -118,7 +120,9 @@ export const getEcoActionById = async (id: string): Promise<{ data: EcoAction | 
 export const logUserAction = async (
   userId: string, 
   actionId: string,
-  notes?: string
+  notes?: string,
+  customTitle?: string,
+  customCategory?: string
 ): Promise<{ data: UserAction | null; error: string | null }> => {
   try {
     console.log(`Logging action ${actionId} for user ${userId}`);
@@ -164,31 +168,87 @@ export const logUserAction = async (
         console.error('Error saving user action to localStorage:', storageError);
       }
       
+      // Update user stats
+      await updateUserStats(userId);
+      
+      // Check for and award badges
+      await checkAndAwardBadges(userId);
+      
       return { data: userAction, error: null };
     }
     
     // For database actions, proceed with normal flow
-    // First get the action to determine buds reward
-    const { data: action, error: actionError } = await getEcoActionById(actionId);
+    let action: EcoAction | null = null;
+    let budsEarned = 0;
+    let co2Impact = 0;
+    let impactStatement = '';
     
-    if (actionError) {
-      console.error('Error getting action:', actionError);
-      return { data: null, error: `Action not found: ${actionError}` };
+    // If this is a custom action (no actionId), analyze it with Gemini
+    if (!actionId && customTitle) {
+      console.log('Analyzing custom action with Gemini:', customTitle);
+      
+      // Use Gemini to analyze the environmental impact
+      const analysis = await analyzeEcoAction(customTitle, notes || undefined);
+      
+      // Create a new eco action with the analysis results
+      const newAction: Partial<EcoAction> = {
+        title: customTitle,
+        description: notes || null,
+        category_id: customCategory || 'custom',
+        impact: analysis.impact,
+        co2_saved: -analysis.co2Impact, // Negative CO2 impact means CO2 saved
+        buds_reward: analysis.budsReward,
+        is_verified: false
+      };
+      
+      // Insert the new action into the database
+      const { data: createdAction, error: createError } = await createEcoAction(newAction);
+      
+      if (createError) {
+        console.error('Error creating custom action:', createError);
+        return { data: null, error: `Failed to create custom action: ${createError}` };
+      }
+      
+      if (!createdAction) {
+        console.error('No action data returned from createEcoAction');
+        return { data: null, error: 'Failed to create custom action: No data returned' };
+      }
+      
+      action = createdAction;
+      budsEarned = analysis.budsReward;
+      co2Impact = -analysis.co2Impact;
+      impactStatement = analysis.impact;
+      
+      console.log('Created new eco action with Gemini analysis:', action);
+    } else {
+      // Get the existing action to determine buds reward
+      const { data: existingAction, error: actionError } = await getEcoActionById(actionId);
+      
+      if (actionError) {
+        console.error('Error getting action:', actionError);
+        return { data: null, error: `Action not found: ${actionError}` };
+      }
+      
+      if (!existingAction) {
+        console.error('Action not found with ID:', actionId);
+        return { data: null, error: 'Action not found' };
+      }
+      
+      action = existingAction;
+      budsEarned = existingAction.buds_reward;
+      co2Impact = existingAction.co2_saved || 0;
+      impactStatement = existingAction.impact;
+      
+      console.log('Found existing action to log:', action);
     }
     
-    if (!action) {
-      console.error('Action not found with ID:', actionId);
-      return { data: null, error: 'Action not found' };
-    }
-    
-    console.log('Found action to log:', action);
-    
+    // Insert the user action
     const { data, error } = await supabase
       .from('user_actions')
       .insert({
         user_id: formatUuid(userId),
-        action_id: actionId,
-        buds_earned: action.buds_reward,
+        action_id: action.id,
+        buds_earned: budsEarned,
         notes: notes || null,
         completed_at: new Date().toISOString(),
       })
@@ -202,6 +262,9 @@ export const logUserAction = async (
     
     // Update user stats
     await updateUserStats(userId);
+    
+    // Check for and award badges
+    await checkAndAwardBadges(userId);
     
     return { data, error: null };
   } catch (error) {
@@ -293,31 +356,99 @@ export const getUserActions = async (userId: string): Promise<{ data: UserAction
  */
 const updateUserStats = async (userId: string): Promise<void> => {
   try {
-    // Get all user actions
-    const { data: actions } = await supabase
+    // Format the user ID as a UUID
+    const formattedUserId = formatUuid(userId);
+    
+    console.log(`Updating stats for user ${formattedUserId}`);
+    
+    // First, get all user actions to count them and sum buds
+    const { data: actions, error: actionsError } = await supabase
       .from('user_actions')
       .select('buds_earned')
-      .eq('user_id', formatUuid(userId));
+      .eq('user_id', formattedUserId);
     
-    if (!actions) return;
+    if (actionsError) {
+      console.error('Error fetching user actions:', actionsError);
+      return;
+    }
+    
+    if (!actions || actions.length === 0) {
+      console.log('No actions found for user');
+      return;
+    }
     
     // Calculate total buds earned
-    const totalBudsEarned = actions.reduce((sum, action) => sum + action.buds_earned, 0);
+    const totalBudsEarned = actions.reduce((sum, action) => sum + (action.buds_earned || 0), 0);
+    
+    // Get all action IDs for this user
+    const { data: userActions, error: userActionsError } = await supabase
+      .from('user_actions')
+      .select('action_id')
+      .eq('user_id', formattedUserId);
+    
+    if (userActionsError) {
+      console.error('Error fetching user action IDs:', userActionsError);
+      return;
+    }
+    
+    if (!userActions || userActions.length === 0) {
+      console.log('No action IDs found for user');
+      return;
+    }
+    
+    // Extract action IDs
+    const actionIds = userActions.map(action => action.action_id);
+    
+    // Get CO2 saved values for these actions
+    const { data: ecoActions, error: ecoActionsError } = await supabase
+      .from('eco_actions')
+      .select('id, co2_saved')
+      .in('id', actionIds);
+    
+    if (ecoActionsError) {
+      console.error('Error fetching eco actions:', ecoActionsError);
+      return;
+    }
+    
+    // Calculate total CO2 saved
+    let totalCO2Saved = 0;
+    if (ecoActions && ecoActions.length > 0) {
+      // Create a map of action IDs to CO2 saved values for faster lookup
+      const co2SavedMap = new Map();
+      ecoActions.forEach(action => {
+        co2SavedMap.set(action.id, action.co2_saved || 0);
+      });
+      
+      // Sum up CO2 saved for each user action
+      userActions.forEach(action => {
+        const co2Saved = co2SavedMap.get(action.action_id) || 0;
+        totalCO2Saved += Number(co2Saved);
+      });
+    }
+    
+    console.log(`Calculated stats: ${actions.length} actions, ${totalBudsEarned} buds, ${totalCO2Saved.toFixed(2)} kg CO2 saved`);
     
     // Update user stats
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_stats')
       .upsert({
-        user_id: formatUuid(userId),
+        user_id: formattedUserId,
         total_actions_completed: actions.length,
-        total_buds_earned: totalBudsEarned,
+        buds_earned: totalBudsEarned,
+        total_carbon_footprint: totalCO2Saved,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
       });
-      
+    
+    if (updateError) {
+      console.error('Error updating user stats:', updateError);
+      return;
+    }
+    
+    console.log('User stats updated successfully');
   } catch (error) {
-    console.error('Error updating user stats:', error);
+    console.error('Exception in updateUserStats:', error);
   }
 };
 
@@ -325,38 +456,27 @@ const updateUserStats = async (userId: string): Promise<void> => {
  * Create a new eco action
  */
 export const createEcoAction = async (
-  actionData: {
-    title: string;
-    description?: string;
-    category_id: string;
-    impact: string;
-    co2_saved?: number;
-    buds_reward?: number;
-    image_url?: string;
-  }
+  actionData: Partial<EcoAction>
 ): Promise<{ data: EcoAction | null; error: string | null }> => {
   try {
-    // First, let's check the actual structure of the eco_actions table
-    await inspectTableStructure('eco_actions');
-    
-    // Generate a UUID for the new action
+    // Generate a UUID for the action
     const actionId = uuidv4();
     
-    // Create a minimal action object with only essential fields
+    // Create a new action object
     const newAction: Record<string, string | number | boolean | null> = {
       id: actionId,
-      title: actionData.title,
-      category_id: actionData.category_id,
-      impact: actionData.impact || `Custom eco action`
+      title: actionData.title || 'Custom Action',
+      description: actionData.description || null,
+      category_id: actionData.category_id || 'custom',
+      impact: actionData.impact || 'Environmental impact',
+      co2_saved: actionData.co2_saved || 0,
+      buds_reward: actionData.buds_reward || 5,
+      image_url: actionData.image_url || null,
+      is_verified: actionData.is_verified || false,
+      created_at: new Date().toISOString()
     };
     
-    // Add optional fields if provided
-    if (actionData.description) newAction.description = actionData.description;
-    if (actionData.co2_saved !== undefined) newAction.co2_saved = actionData.co2_saved;
-    if (actionData.buds_reward !== undefined) newAction.buds_reward = actionData.buds_reward;
-    if (actionData.image_url) newAction.image_url = actionData.image_url;
-    
-    console.log('Creating new eco action with minimal fields:', newAction);
+    console.log('Creating new eco action:', newAction);
     
     // Insert the new action
     const { data, error } = await supabase
@@ -368,31 +488,28 @@ export const createEcoAction = async (
     if (error) {
       console.error('Error inserting eco action:', error);
       
-      // Try an alternative approach without the id field (let Supabase generate it)
-      if (error.message && error.message.includes('id')) {
-        console.log('Trying without explicit ID...');
-        const altAction = { ...newAction };
-        delete altAction.id;
-        
-        const { data: altData, error: altError } = await supabase
-          .from('eco_actions')
-          .insert(altAction)
-          .select()
-          .single();
-        
-        if (altError) {
-          console.error('Alternative approach also failed:', altError);
-          throw altError;
-        }
-        
-        return { data: altData, error: null };
+      // Try without specifying the ID (let Supabase generate it)
+      console.log('Trying without explicit ID...');
+      const altAction = { ...newAction };
+      delete altAction.id;
+      
+      const { data: altData, error: altError } = await supabase
+        .from('eco_actions')
+        .insert(altAction)
+        .select()
+        .single();
+      
+      if (altError) {
+        console.error('Alternative approach also failed:', altError);
+        throw altError;
       }
       
-      throw error;
+      return { data: altData, error: null };
     }
     
     return { data, error: null };
   } catch (error) {
+    console.error('Exception in createEcoAction:', error);
     return { data: null, error: handleSupabaseError(error).error };
   }
 };
@@ -416,19 +533,10 @@ async function inspectTableStructure(tableName: string): Promise<void> {
     if (data && data.length > 0) {
       console.log(`${tableName} table structure:`, Object.keys(data[0]));
     } else {
-      console.log(`${tableName} table is empty, trying to get columns from metadata`);
+      console.log(`${tableName} table is empty, no structure information available`);
       
-      // Try to get columns from metadata
-      const { data: columns, error: columnsError } = await supabase.rpc(
-        'get_table_columns',
-        { table_name: tableName }
-      );
-      
-      if (columnsError) {
-        console.error(`Error getting columns for ${tableName}:`, columnsError);
-      } else {
-        console.log(`${tableName} columns:`, columns);
-      }
+      // Instead of using RPC, we'll just log that we can't get column information
+      console.log(`Cannot retrieve column information for empty table ${tableName}`);
     }
   } catch (e) {
     console.error(`Exception inspecting ${tableName} table:`, e);
@@ -449,15 +557,18 @@ export const createCustomEcoAction = async (
     
     console.log('Creating client-side action with ID:', actionId);
     
+    // Calculate CO2 impact and buds based on category
+    const { co2Saved, budsReward, impact } = calculateEcoImpact(title, category);
+    
     // Create a client-side action object
     const customAction: EcoAction = {
       id: actionId,
       title: title,
       description: notes || null,
-      impact: `Custom eco action: ${title}`,
-      category_id: category, // Store as string, will be handled in logUserAction
-      co2_saved: 0,
-      buds_reward: 5,
+      impact: impact,
+      category_id: category,
+      co2_saved: co2Saved,
+      buds_reward: budsReward,
       image_url: null,
       is_verified: false,
       created_at: new Date().toISOString()
@@ -486,6 +597,142 @@ export const createCustomEcoAction = async (
     return { data: null, error: handleSupabaseError(error).error };
   }
 };
+
+/**
+ * Calculate the environmental impact and buds reward for an eco action
+ */
+function calculateEcoImpact(title: string, category: string): { co2Saved: number; budsReward: number; impact: string } {
+  // Default values for non-eco actions
+  let co2Saved = 0;
+  let budsReward = 0;
+  let impact = 'No environmental impact';
+  
+  // Convert title and category to lowercase for easier matching
+  const lowerTitle = title.toLowerCase();
+  const lowerCategory = category.toLowerCase();
+  
+  // Check if this is a known eco action
+  const isEcoAction = 
+    lowerCategory === 'transportation' || 
+    lowerCategory === 'waste' || 
+    lowerCategory === 'food' || 
+    lowerCategory === 'energy' || 
+    lowerCategory === 'water';
+  
+  if (!isEcoAction) {
+    return { co2Saved, budsReward, impact };
+  }
+  
+  // Calculate impact based on category
+  switch (lowerCategory) {
+    case 'transportation':
+      if (lowerTitle.includes('public') || lowerTitle.includes('transit') || lowerTitle.includes('bus') || lowerTitle.includes('train')) {
+        co2Saved = 2.3;
+        budsReward = 15;
+        impact = '2.3 kg CO₂ saved';
+      } else if (lowerTitle.includes('walk') || lowerTitle.includes('bike') || lowerTitle.includes('cycling')) {
+        co2Saved = 1.8;
+        budsReward = 12;
+        impact = '1.8 kg CO₂ saved';
+      } else if (lowerTitle.includes('carpool') || lowerTitle.includes('rideshare')) {
+        co2Saved = 1.5;
+        budsReward = 10;
+        impact = '1.5 kg CO₂ saved';
+      } else {
+        co2Saved = 1.0;
+        budsReward = 8;
+        impact = '1.0 kg CO₂ saved';
+      }
+      break;
+      
+    case 'waste':
+      if (lowerTitle.includes('recycle') || lowerTitle.includes('recycling')) {
+        co2Saved = 0.8;
+        budsReward = 8;
+        impact = '0.8 kg CO₂ saved';
+      } else if (lowerTitle.includes('reusable') || lowerTitle.includes('mug') || lowerTitle.includes('bag')) {
+        co2Saved = 0.5;
+        budsReward = 5;
+        impact = '0.5 kg waste reduced';
+      } else if (lowerTitle.includes('compost')) {
+        co2Saved = 0.6;
+        budsReward = 7;
+        impact = '0.6 kg waste diverted';
+      } else {
+        co2Saved = 0.3;
+        budsReward = 3;
+        impact = '0.3 kg waste reduced';
+      }
+      break;
+      
+    case 'food':
+      if (lowerTitle.includes('meatless') || lowerTitle.includes('vegetarian') || lowerTitle.includes('vegan') || lowerTitle.includes('plant')) {
+        co2Saved = 1.5;
+        budsReward = 10;
+        impact = '1.5 kg CO₂ saved';
+      } else if (lowerTitle.includes('local') || lowerTitle.includes('farmers market')) {
+        co2Saved = 0.4;
+        budsReward = 7;
+        impact = '0.4 kg CO₂ saved';
+      } else if (lowerTitle.includes('organic')) {
+        co2Saved = 0.3;
+        budsReward = 5;
+        impact = '0.3 kg CO₂ saved';
+      } else {
+        co2Saved = 0.2;
+        budsReward = 3;
+        impact = '0.2 kg CO₂ saved';
+      }
+      break;
+      
+    case 'energy':
+      if (lowerTitle.includes('light') || lowerTitle.includes('lighting')) {
+        co2Saved = 0.3;
+        budsReward = 5;
+        impact = '0.3 kg CO₂ saved';
+      } else if (lowerTitle.includes('unplug') || lowerTitle.includes('standby')) {
+        co2Saved = 0.2;
+        budsReward = 5;
+        impact = '0.2 kg CO₂ saved';
+      } else if (lowerTitle.includes('thermostat') || lowerTitle.includes('temperature')) {
+        co2Saved = 0.5;
+        budsReward = 8;
+        impact = '0.5 kg CO₂ saved';
+      } else {
+        co2Saved = 0.2;
+        budsReward = 3;
+        impact = '0.2 kg CO₂ saved';
+      }
+      break;
+      
+    case 'water':
+      if (lowerTitle.includes('shower') || lowerTitle.includes('bath')) {
+        co2Saved = 0.2;
+        budsReward = 5;
+        impact = '50 L water saved';
+      } else if (lowerTitle.includes('rain') || lowerTitle.includes('rainwater')) {
+        co2Saved = 0.1;
+        budsReward = 8;
+        impact = '50 L water saved';
+      } else if (lowerTitle.includes('leak') || lowerTitle.includes('faucet') || lowerTitle.includes('tap')) {
+        co2Saved = 0.15;
+        budsReward = 10;
+        impact = '70 L water saved';
+      } else {
+        co2Saved = 0.1;
+        budsReward = 3;
+        impact = '20 L water saved';
+      }
+      break;
+      
+    default:
+      co2Saved = 0.1;
+      budsReward = 2;
+      impact = 'Minimal environmental impact';
+  }
+  
+  return { co2Saved, budsReward, impact };
+}
 
 /**
  * Initialize the eco_actions table with sample data if it's empty
@@ -622,5 +869,42 @@ export const initializeEcoActions = async (): Promise<{ success: boolean; error:
   } catch (error) {
     console.error('Exception in initializeEcoActions:', error);
     return { success: false, error: 'Exception initializing eco actions' };
+  }
+};
+
+/**
+ * Manually refresh user stats for existing actions
+ * This can be called to fix issues with user stats
+ */
+export const refreshUserStats = async (userId: string): Promise<{ success: boolean; error: string | null }> => {
+  try {
+    console.log(`Manually refreshing stats for user ${userId}`);
+    
+    // Call updateUserStats to recalculate and update the stats
+    await updateUserStats(userId);
+    
+    // Get the updated stats to return to the caller
+    const formattedUserId = formatUuid(userId);
+    const { data: statsData, error: statsError } = await supabase
+      .from('user_stats')
+      .select('*')
+      .eq('user_id', formattedUserId)
+      .maybeSingle();
+    
+    if (statsError) {
+      console.error('Error fetching updated user stats:', statsError);
+      return { success: false, error: 'Failed to fetch updated stats' };
+    }
+    
+    if (!statsData) {
+      console.error('No stats found after update');
+      return { success: false, error: 'No stats found after update' };
+    }
+    
+    console.log('Stats refreshed successfully:', statsData);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Exception in refreshUserStats:', error);
+    return { success: false, error: handleSupabaseError(error).error };
   }
 }; 

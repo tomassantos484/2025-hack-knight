@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { getUserActions, formatUuid } from '@/services/ecoActionsService';
 import { UserAction, EcoAction } from '@/types/database';
 import { format } from 'date-fns';
-import { Leaf, Calendar, Clock, FileText, AlertCircle } from 'lucide-react';
+import { Leaf, Calendar, Clock, FileText, AlertCircle, BarChart, Droplet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ActionHistoryProps {
@@ -55,6 +55,20 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
     fetchUserActions();
   }, [userId]);
 
+  // Calculate total impact
+  const calculateTotalImpact = () => {
+    if (!actions || actions.length === 0) return { co2Saved: 0, budsEarned: 0 };
+    
+    return actions.reduce((totals, action) => {
+      return {
+        co2Saved: totals.co2Saved + (action.eco_actions?.co2_saved || 0),
+        budsEarned: totals.budsEarned + (action.buds_earned || 0)
+      };
+    }, { co2Saved: 0, budsEarned: 0 });
+  };
+
+  const totalImpact = calculateTotalImpact();
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -102,7 +116,20 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
 
   return (
     <div>
-      <h3 className="text-lg font-medium mb-4">Your Eco Actions</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Your Eco Actions</h3>
+        <div className="flex gap-4">
+          <div className="text-sm bg-eco-green/10 text-eco-green px-3 py-1 rounded-full flex items-center gap-1.5">
+            <BarChart className="h-3.5 w-3.5" />
+            <span>{totalImpact.co2Saved.toFixed(1)} kg CO₂ saved</span>
+          </div>
+          <div className="text-sm bg-eco-green/10 text-eco-green px-3 py-1 rounded-full flex items-center gap-1.5">
+            <Leaf className="h-3.5 w-3.5" />
+            <span>{totalImpact.budsEarned} buds earned</span>
+          </div>
+        </div>
+      </div>
+      
       <div className="space-y-4">
         {actions.map((action) => (
           <motion.div
@@ -134,12 +161,32 @@ const ActionHistory: React.FC<ActionHistoryProps> = ({ userId }) => {
                   {action.completed_at ? format(new Date(action.completed_at), 'h:mm a') : 'Unknown time'}
                 </span>
               </div>
+              
+              {action.eco_actions?.co2_saved && (
+                <div className="flex items-center gap-1">
+                  <BarChart className="h-3.5 w-3.5" />
+                  <span>{action.eco_actions.co2_saved} kg CO₂ saved</span>
+                </div>
+              )}
+              
+              {action.eco_actions?.category_id && (
+                <div className="flex items-center gap-1">
+                  <Droplet className="h-3.5 w-3.5" />
+                  <span className="capitalize">{action.eco_actions.category_id}</span>
+                </div>
+              )}
             </div>
             
             {action.notes && (
               <div className="mt-2 text-sm flex items-start gap-1.5">
                 <FileText className="h-3.5 w-3.5 mt-0.5 text-eco-dark/60" />
                 <p className="text-eco-dark/80">{action.notes}</p>
+              </div>
+            )}
+            
+            {action.eco_actions?.impact && (
+              <div className="mt-2 text-xs bg-eco-cream/50 p-2 rounded text-eco-dark/80">
+                <strong>Impact:</strong> {action.eco_actions.impact}
               </div>
             )}
           </motion.div>

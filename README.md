@@ -1,34 +1,109 @@
-# 🌱 EcoVision Tracker ♻️
+# 🌱 EcoVision Tracker: Sustainability Made Simple ♻️
 
-### 🚀 Project Overview
-**EcoVision Tracker** is your **personal sustainability assistant**, combining **eco action tracking** with **AI-powered trash sorting** to help users build eco-friendly habits and learn proper waste disposal. 
+## 🚀 Project Overview
+**EcoVision Tracker** is your personal sustainability companion that makes eco-friendly living accessible and rewarding. By combining intuitive tracking tools with AI-powered features, we help you build sustainable habits and measure your positive environmental impact.
 
-### 💡 Key Features
-- ✅ Log daily eco-friendly actions (e.g., using reusable bottles, taking public transit)
-- 📸 Upload photos of trash items to **automatically detect** if they should go to Recycle, Compost, or Trash.
-- 📊 Track personal progress with a dashboard showing **eco streaks**, waste diversion rates, and estimated **carbon footprint reduction**.
-- 🔔 Get daily eco tips & challenges to stay motivated.
-- 🎉 Earn badges for completing challenges and maintaining eco streaks.
-- 🌍 Track your carbon footprint and environmental impact
-- 📱 Mobile-friendly interface for on-the-go tracking
-- 🔄 Real-time progress updates and statistics
-- 🎯 Personalized eco goals and challenges
-- 📈 Visual analytics and progress tracking
+## 💡 Key Features
 
-### 🛠️ Tech Stack
-- **Frontend Framework**: React with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS with shadcn/ui components
+### 📊 Dashboard
+- Track your sustainability journey with visual metrics
+- Monitor your eco streak and carbon footprint reduction
+- View personalized eco tips and challenges
+
+### 🌿 Eco Actions
+- Log daily sustainable actions like using reusable items or taking public transit
+- Complete challenges to build eco-friendly habits
+- Maintain streaks to reinforce positive behavior
+
+### 🔍 AI Trash Scanner
+- Upload photos of waste items for instant AI classification
+- Learn whether items belong in recycling, compost, or landfill
+- Receive educational tips on proper waste disposal
+- Earn Buds rewards for recycling correctly
+
+### 💰 EcoWallet
+- Earn "Buds" (eco-currency) for sustainable actions
+- Track your transaction history
+- Redeem Buds for badges, merchandise, or donations to environmental causes
+
+### 🏆 Badges & Achievements
+- Earn badges for completing eco challenges
+- Showcase your environmental accomplishments
+- Unlock special rewards as you progress
+
+### 📱 User Experience
+- Mobile-friendly responsive design
+- Intuitive navigation and clean interface
+- Dark/light mode support
+
+## 🛠️ Tech Stack
+- **Frontend**: React with TypeScript, Vite, Tailwind CSS
+- **Backend**: Flask API with Gemini AI integration
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Clerk
 - **State Management**: React Query
-- **Routing**: React Router DOM
-- **Form Handling**: React Hook Form with Zod validation
-- **Charts**: Recharts
-- **UI Components**: Radix UI primitives
-- **Date Handling**: date-fns
-- **Animations**: Tailwind CSS Animate
-- **Icons**: Lucide React
-- **Notifications**: Sonner
-- **Carousel**: Embla Carousel
+- **UI Components**: shadcn/ui, Radix UI primitives
+- **Visualizations**: Recharts
+
+## 🚀 Getting Started
+
+### Frontend Setup
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Backend Setup
+```bash
+# Create and activate virtual environment (optional)
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start Flask server
+python app.py
+```
+
+## 📋 Requirements
+- Node.js (v18+)
+- Python 3.9+
+- Supabase account
+- Clerk account
+- Gemini API key (for AI features)
+
+## 🔧 Environment Variables
+Create a `.env` file with:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_key
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_key
+VITE_GEMINI_API_KEY=your_gemini_api_key
+```
+
+## 📱 Features in Detail
+
+### Eco Action Tracking
+Track your daily sustainable actions, from using reusable containers to reducing water usage. Each action earns Buds and contributes to your environmental impact score.
+
+### AI Trash Scanner
+Our AI-powered waste classification system uses Google's Gemini API to analyze images of waste items and provide accurate disposal recommendations, educational tips, and Buds rewards.
+
+### EcoWallet
+Manage your earned Buds currency, view transaction history, and redeem rewards. The wallet provides a tangible incentive system for sustainable behavior.
+
+### Badges & Achievements
+Earn badges for milestones like "Early Adopter," "Waste Warrior," and "Carbon Cutter" to gamify your sustainability journey.
+
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+This project is licensed under the MIT License.
 
 ### 📂 Project Structure
 ```
@@ -117,16 +192,6 @@ eco-action-logger-06/
 - Dark/light mode
 - Intuitive navigation
 - Real-time updates
-
-### 🤝 Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### 📝 License
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ### 🙏 Acknowledgments
 - [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components

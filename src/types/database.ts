@@ -21,11 +21,13 @@ export interface UserStats {
   user_id: string;
   total_actions_completed: number;
   total_carbon_footprint: number;
-  total_buds_earned: number;
+  buds_earned: number;
   total_buds_spent: number;
   eco_friendly_percentage: number;
   average_eco_score: number;
   updated_at: string;
+  streak_days?: number;
+  last_action_date?: string;
 }
 
 export interface Category {

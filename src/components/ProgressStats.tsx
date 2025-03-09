@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Leaf, Recycle, Car } from 'lucide-react';
@@ -60,7 +59,7 @@ const ProgressStats = ({ stats }: ProgressStatsProps) => {
       
       <StatCard 
         title="CO₂ Saved"
-        value={`${stats.co2Saved} kg`}
+        value={`${stats.co2Saved.toFixed(1)} kg`}
         description="Estimated carbon footprint reduction"
         icon={<Car size={18} className="text-eco-dark/80" />}
         change="5.2 kg"
