@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-// Use environment variable if available, otherwise default to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5002';
+// Use environment variable if available, otherwise use the Vercel deployment URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://https://2025-hack-knight.vercel.app/';
 
 console.log('Using API base URL:', API_BASE_URL);
 
