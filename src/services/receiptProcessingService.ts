@@ -1,6 +1,9 @@
 import Tesseract from 'tesseract.js';
 import axios from 'axios';
 import { getAuthenticatedClient, getDevBypassClient } from './supabaseService';
+import { supabase } from '../services/supabaseClient';
+import { EcoAction, UserAction } from '@/types/database';
+import { getUserByClerkId } from './userService';
 
 /**
  * Upload receipt image to Supabase storage
@@ -162,58 +165,85 @@ export const processReceiptImage = async (
         // Get the development bypass client
         const supabase = getDevBypassClient();
         
-        // Generate a UUID for the user
-        // For development, we'll use a deterministic UUID based on the user ID
-        // In production, you would map Clerk user IDs to UUIDs in your database
-        const userUuid = generateUuidFromString(userId);
-        console.log('Generated UUID for user:', userUuid);
+        // Try to get the Supabase user ID from the Clerk ID
+        let supabaseUserId = null;
         
-        // First, check if the user exists in the Users table by clerk_id
-        const { data: userData, error: userCheckError } = await supabase
-          .from("Users")  // Ensure "Users" has the correct case
-          .select("id")
-          .eq("clerk_id", userId);
-        
-        let existingUserId = null;
-        if (userData && userData.length > 0) {
-          existingUserId = userData[0].id;
-          console.log('User exists in database with id:', existingUserId);
-        }
-        
-        if (userCheckError) {
-          console.error('Error checking if user exists:', userCheckError);
-        }
-        
-        // If the user doesn't exist, create them
-        if (!existingUserId) {
-          console.log('User does not exist in database, creating user:', userUuid);
-          
-          // Create a basic user record
-          const { error: createUserError } = await supabase
-            .from('Users')
-            .insert({
-              id: userUuid,
-              clerk_id: userId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              username: `user_${userUuid.substring(0, 8)}`,
-              email: `user_${userUuid.substring(0, 8)}@example.com`,
-            });
-          
-          if (createUserError) {
-            console.error('Error creating user in database:', createUserError);
-            // Continue anyway - the user might actually exist but we couldn't see it due to RLS
-          } else {
-            console.log('User created in database');
-            existingUserId = userUuid;
+        try {
+          const supabaseUser = await getUserByClerkId(userId);
+          if (supabaseUser) {
+            supabaseUserId = supabaseUser;
+            console.log('Found Supabase user ID from Clerk ID:', supabaseUserId);
           }
+        } catch (userError) {
+          console.error('Error getting Supabase user from Clerk ID:', userError);
         }
         
-        // Use the existing user ID if found, otherwise use the generated UUID
-        const finalUserId = existingUserId || userUuid;
+        // If we couldn't find a Supabase user, fall back to generating a UUID
+        if (!supabaseUserId) {
+          // Generate a UUID for the user
+          const userUuid = generateUuidFromString(userId);
+          console.log('Generated UUID for user:', userUuid);
+          
+          // First, check if the user exists in the users table by email
+          const { data: existingUser, error: userCheckError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', `user_${userUuid.substring(0, 8)}@example.com`)
+            .maybeSingle();
+          
+          let existingUserId = existingUser?.id;
+          
+          if (existingUser) {
+            console.log('User exists in database with id:', existingUserId);
+          }
+          
+          if (userCheckError) {
+            console.error('Error checking if user exists:', userCheckError);
+            
+            // Check if the error is because the table doesn't exist
+            if (userCheckError.code === '42P01') { // relation does not exist
+              throw new Error('The users table does not exist in your Supabase project. Please run the schema.sql file in your Supabase SQL editor to create the necessary tables.');
+            }
+          }
+          
+          // If the user doesn't exist, create them
+          if (!existingUserId) {
+            const formattedUuid = formatUuid(userUuid);
+            console.log('User does not exist in database, creating user:', formattedUuid);
+            
+            // Create a basic user record with properly formatted UUID
+            const { error: createUserError } = await supabase
+              .from('users')
+              .insert({
+                id: formattedUuid,
+                email: `user_${userUuid.substring(0, 8)}@example.com`,
+                clerk_id: userId, // Store the Clerk ID for future reference
+                created_at: new Date().toISOString()
+              });
+            
+            if (createUserError) {
+              console.error('Error creating user in database:', createUserError);
+              
+              // Check if the error is because the table doesn't exist
+              if (createUserError.code === '42P01') { // relation does not exist
+                throw new Error('The users table does not exist in your Supabase project. Please run the schema.sql file in your Supabase SQL editor to create the necessary tables.');
+              }
+              
+              // Continue anyway - the user might actually exist but we couldn't see it due to RLS
+            } else {
+              console.log('User created in database');
+              existingUserId = formattedUuid;
+            }
+          }
+          
+          supabaseUserId = existingUserId || userUuid;
+        }
         
-        // Generate a unique receipt ID using timestamp (numeric)
-        const receiptId = Date.now();
+        // Use the Supabase user ID for the receipt
+        const finalUserId = supabaseUserId;
+        
+        // Generate a valid receipt ID as a proper UUID
+        const receiptId = generateValidUuid();
         
         // Prepare the receipt data - make sure field names match the database schema
         const receiptDataToInsert = {
@@ -224,45 +254,61 @@ export const processReceiptImage = async (
           total_items_count: receiptAnalysis.total_items_count,
           carbon_footprint: receiptAnalysis.carbon_footprint,
           buds_earned: receiptAnalysis.buds_earned,
-          total_spent: receiptAnalysis.total_spent,
-          eco_friendly_spent: receiptAnalysis.eco_friendly_spent,
+          total_amount: receiptAnalysis.total_spent, // Changed to match schema
           created_at: receiptAnalysis.created_at
         };
         
-        console.log('Inserting receipt data:', receiptDataToInsert);
-        
-        // Insert receipt data into the database
+        console.log('Inserting receipt with ID:', receiptId);
         const { data: receiptResult, error } = await supabase
-          .from('Receipts')
+          .from('receipts')
           .insert(receiptDataToInsert);
         
         if (error) {
           console.error('Error storing receipt data in database:', error);
           
-          // Try a different approach if the first one fails
-          if (error.code === '42501') { // Permission denied
+          // Check if the error is because the table doesn't exist
+          if (error.code === '42P01') { // relation does not exist
+            throw new Error('The receipts table does not exist in your Supabase project. Please run the schema.sql file in your Supabase SQL editor to create the necessary tables.');
+          }
+          
+          // Check if it's a UUID format error
+          if (error.code === '22P02') { // invalid input syntax for type uuid
+            console.error('UUID format error. Receipt ID:', receiptId);
+            throw new Error(`Invalid UUID format. Please ensure all UUIDs are properly formatted. Error: ${error.message}`);
+          }
+          
+          // If it's a permission error, try with upsert
+          if (error.code === '42501') { // permission denied
             console.log('Permission denied, trying with upsert...');
             const { error: upsertError } = await supabase
-              .from('Receipts')
+              .from('receipts')
               .upsert(receiptDataToInsert);
               
             if (upsertError) {
               console.error('Error upserting receipt data:', upsertError);
-            } else {
-              console.log('Receipt data upserted successfully');
+              throw upsertError;
             }
+          } else {
+            throw error;
           }
         } else {
           console.log('Receipt data stored in database:', receiptResult);
         }
+        
+        // Return the full analysis with the receipt ID
+        return {
+          ...fullAnalysis,
+          id: receiptId,
+          user_id: finalUserId
+        };
       } catch (dbError) {
         console.error('Database error:', dbError);
+        // Return the analysis without database info
+        return fullAnalysis;
       }
-    } else {
-      console.log('User not authenticated, skipping database storage');
     }
     
-    // Return the full analysis including extracted text
+    // Return the analysis
     return fullAnalysis;
   } catch (error) {
     console.error('Error processing receipt image:', error);
@@ -288,9 +334,24 @@ function generateUuidFromString(str: string): string {
   
   // Use the hash to create a UUID-like string
   const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-  const uuid = `${hashStr.substring(0, 8)}-${hashStr.substring(0, 4)}-4${hashStr.substring(1, 4)}-${Math.floor(Math.random() * 10000).toString(16).padStart(4, '0')}-${Date.now().toString(16).substring(0, 12)}`;
   
-  return uuid;
+  // Create random hex strings for parts we don't derive from the hash
+  const randomHex = (length: number) => 
+    Array.from({length}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  
+  // Generate the UUID parts
+  const p1 = hashStr.substring(0, 8);
+  const p2 = hashStr.substring(0, 4);
+  const p3 = '4' + hashStr.substring(1, 4); // Version 4 UUID
+  
+  // For the variant bits (position 17), we need a hex value of 8, 9, A, or B
+  const variantDigit = [8, 9, 10, 11][Math.floor(Math.random() * 4)].toString(16);
+  const p4 = variantDigit + randomHex(3);
+  
+  const p5 = randomHex(12);
+  
+  // Format as UUID
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`;
 }
 
 /**
@@ -320,16 +381,65 @@ const fileToBase64 = (file: File): Promise<string> => {
  */
 export const testDatabaseConnection = async () => {
   try {
-    console.log('Testing database connection in development mode');
-    console.log('Database connection successful (mock)');
-    return;
+    console.log('Testing database connection to Project 2.0');
     
-    // In production, you would use the following code:
-    // const { data, error } = await getDevBypassClient().from('Receipts').select('*').limit(1);
-    // if (error) throw error;
-    // console.log('Database connection successful:', data);
+    // Get the development bypass client
+    const supabase = getDevBypassClient();
+    
+    // Check if the users table exists
+    console.log('Checking if users table exists...');
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
+      
+    if (usersError) {
+      console.error('Error accessing users table:', usersError);
+      
+      // If the table doesn't exist, we need to create it
+      if (usersError.code === '42P01') { // relation does not exist
+        console.log('Users table does not exist. You need to create the database schema.');
+        console.log('Please run the SQL commands from schema.sql in your Supabase SQL editor.');
+      }
+    } else {
+      console.log('Users table exists:', usersData);
+    }
+    
+    // Check if the receipts table exists
+    console.log('Checking if receipts table exists...');
+    const { data: receiptsData, error: receiptsError } = await supabase
+      .from('receipts')
+      .select('*')
+      .limit(1);
+      
+    if (receiptsError) {
+      console.error('Error accessing receipts table:', receiptsError);
+      
+      // If the table doesn't exist, we need to create it
+      if (receiptsError.code === '42P01') { // relation does not exist
+        console.log('Receipts table does not exist. You need to create the database schema.');
+        console.log('Please run the SQL commands from schema.sql in your Supabase SQL editor.');
+      }
+    } else {
+      console.log('Receipts table exists:', receiptsData);
+    }
+    
+    // We'll skip the schema check since it requires special permissions
+    // that might not be available in the client
+    
+    return {
+      usersTableExists: !usersError,
+      receiptsTableExists: !receiptsError,
+      usersError,
+      receiptsError
+    };
   } catch (error) {
     console.error('Database connection failed:', error);
+    return {
+      usersTableExists: false,
+      receiptsTableExists: false,
+      error
+    };
   }
 };
 
@@ -399,4 +509,288 @@ function extractTotalAmount(text: string): number {
 function calculateEcoFriendlySpent(ecoFriendlyItems: Array<{ name: string; price: number }>): number {
   // Sum up the prices of eco-friendly items
   return parseFloat(ecoFriendlyItems.reduce((sum, item) => sum + item.price, 0).toFixed(2));
-} 
+}
+
+/**
+ * Format a string as a UUID
+ * @param uuid String to format as UUID
+ * @returns Formatted UUID string
+ */
+export function formatUuid(uuid: string): string {
+  // Check if the UUID is already properly formatted
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+    return uuid;
+  }
+  
+  // Remove any non-alphanumeric characters
+  const cleaned = uuid.replace(/[^a-f0-9]/gi, '');
+  
+  // Ensure we have enough characters (pad if necessary)
+  const padded = (cleaned + '0'.repeat(32)).slice(0, 32);
+  
+  // Format as UUID
+  return `${padded.slice(0, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}-${padded.slice(16, 20)}-${padded.slice(20, 32)}`;
+}
+
+/**
+ * Generate a valid UUID v4 compatible with PostgreSQL
+ * This is a simple implementation for development purposes
+ * In production, you would use a proper UUID library
+ * @returns UUID string in the format xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ */
+export function generateValidUuid(): string {
+  // Create random hex strings
+  const randomHex = (length: number) => 
+    Array.from({length}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  
+  // Generate the UUID parts
+  const p1 = randomHex(8);
+  const p2 = randomHex(4);
+  const p3 = '4' + randomHex(3); // Version 4 UUID
+  
+  // For the variant bits (position 17), we need a hex value of 8, 9, A, or B
+  const variantDigit = [8, 9, 10, 11][Math.floor(Math.random() * 4)].toString(16);
+  const p4 = variantDigit + randomHex(3);
+  
+  const p5 = randomHex(12);
+  
+  // Format as UUID
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`;
+}
+
+// Define a Receipt type
+export interface Receipt {
+  id: string;
+  user_id: string;
+  store_name?: string;
+  purchase_date?: string;
+  total_amount: number;
+  eco_score?: number;
+  carbon_footprint?: number;
+  buds_earned?: number;
+  eco_items_count?: number;
+  total_items_count?: number;
+  eco_friendly_spent?: number;
+  created_at: string;
+}
+
+/**
+ * Get receipt history for a user
+ * @param userId User ID
+ * @returns Array of receipt data
+ */
+export const getUserReceiptHistory = async (userId: string): Promise<Receipt[]> => {
+  try {
+    if (!userId) {
+      console.warn('No user ID provided for receipt history');
+      return [];
+    }
+
+    const formattedUserId = formatUuid(userId);
+    console.log('Getting receipt history for user ID:', userId);
+    console.log('Formatted user ID:', formattedUserId);
+    
+    const supabase = getDevBypassClient();
+    
+    // First try with the formatted UUID
+    console.log('Querying with formatted UUID:', formattedUserId);
+    const { data: receiptsWithFormattedId, error: errorWithFormattedId } = await supabase
+      .from('receipts')
+      .select('*')
+      .eq('user_id', formattedUserId)
+      .order('created_at', { ascending: false });
+    
+    if (errorWithFormattedId) {
+      console.error('Error fetching receipt history with formatted ID:', errorWithFormattedId);
+    } else if (receiptsWithFormattedId && receiptsWithFormattedId.length > 0) {
+      console.log(`Found ${receiptsWithFormattedId.length} receipts with formatted ID`);
+      return receiptsWithFormattedId;
+    }
+    
+    // If no results, try a broader search
+    console.log('No receipts found with formatted ID, trying a broader search...');
+    const { data: allReceipts, error: allReceiptsError } = await supabase
+      .from('receipts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (allReceiptsError) {
+      console.error('Error fetching all receipts:', allReceiptsError);
+      return [];
+    }
+    
+    console.log(`Found ${allReceipts?.length || 0} total receipts in database`);
+    
+    if (allReceipts && allReceipts.length > 0) {
+      // Log the first few receipts to see their user_id format
+      console.log('Sample receipt user_ids:', allReceipts.slice(0, 3).map(r => r.user_id));
+      
+      // Try to find receipts that might match this user with different ID formats
+      const possibleUserReceipts = allReceipts.filter(receipt => {
+        // Check if the receipt's user_id contains parts of our userId
+        const receiptUserId = String(receipt.user_id || '');
+        return (
+          receiptUserId.includes(userId.substring(0, 8)) || 
+          userId.includes(receiptUserId.substring(0, 8))
+        );
+      });
+      
+      if (possibleUserReceipts.length > 0) {
+        console.log(`Found ${possibleUserReceipts.length} possible matching receipts for this user`);
+        return possibleUserReceipts;
+      }
+    }
+    
+    console.log('No receipts found for this user');
+    return [];
+  } catch (error) {
+    console.error('Error in getUserReceiptHistory:', error);
+    return [];
+  }
+};
+
+// Define a ReceiptItem type
+export interface ReceiptItem {
+  id?: string;
+  receipt_id: string;
+  name: string;
+  category?: string;
+  price: number;
+  quantity?: number;
+  is_eco_friendly: boolean;
+  carbon_footprint?: number;
+  suggestion?: string;
+  created_at?: string;
+}
+
+/**
+ * Store receipt items in the database
+ * @param receiptId Receipt ID
+ * @param items Array of receipt items
+ * @returns Success status
+ */
+export const storeReceiptItems = async (
+  receiptId: string, 
+  items: Array<{
+    name: string;
+    price: number;
+    isEcoFriendly: boolean;
+    category?: string;
+    carbonFootprint?: number;
+    alternativeSuggestion?: string;
+  }>
+): Promise<boolean> => {
+  try {
+    if (!receiptId || !items || items.length === 0) {
+      console.warn('No receipt ID or items provided');
+      return false;
+    }
+
+    console.log(`Storing ${items.length} items for receipt ${receiptId}`);
+    
+    // Convert items to the database format
+    const dbItems = items.map(item => ({
+      id: generateValidUuid(),
+      receipt_id: receiptId,
+      name: item.name,
+      category: item.category || 'Uncategorized',
+      price: item.price,
+      quantity: 1,
+      is_eco_friendly: item.isEcoFriendly,
+      carbon_footprint: item.carbonFootprint || 0,
+      suggestion: item.alternativeSuggestion,
+      created_at: new Date().toISOString()
+    }));
+    
+    // Store items in the database
+    const { error } = await supabase
+      .from('receipt_items')
+      .insert(dbItems);
+    
+    if (error) {
+      console.error('Error storing receipt items:', error);
+      return false;
+    }
+    
+    console.log(`Successfully stored ${items.length} items for receipt ${receiptId}`);
+    return true;
+  } catch (error) {
+    console.error('Error in storeReceiptItems:', error);
+    return false;
+  }
+};
+
+/**
+ * Get receipt items from the database
+ * @param receiptId Receipt ID
+ * @returns Array of receipt items
+ */
+export const getReceiptItems = async (receiptId: string): Promise<ReceiptItem[]> => {
+  try {
+    if (!receiptId) {
+      console.warn('No receipt ID provided for getReceiptItems');
+      throw new Error('Receipt ID is required');
+    }
+
+    console.log(`Getting items for receipt ${receiptId}`);
+    
+    // First check if the receipt exists
+    const { data: receiptExists, error: receiptCheckError } = await supabase
+      .from('receipts')
+      .select('id')
+      .eq('id', receiptId)
+      .maybeSingle();
+    
+    if (receiptCheckError) {
+      console.error('Error checking if receipt exists:', receiptCheckError);
+      // Continue anyway, we'll try to get the items
+    } else if (!receiptExists) {
+      console.error(`Receipt with ID ${receiptId} does not exist`);
+      throw new Error(`Receipt with ID ${receiptId} does not exist`);
+    }
+    
+    // Check if the receipt_items table exists
+    try {
+      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+        'check_table_exists',
+        { table_name: 'receipt_items' }
+      );
+      
+      if (tableCheckError) {
+        console.error('Error checking if receipt_items table exists:', tableCheckError);
+        // Continue anyway, the query will fail if the table doesn't exist
+      } else if (!tableExists) {
+        console.error('receipt_items table does not exist');
+        throw new Error('receipt_items table does not exist');
+      }
+    } catch (tableCheckError) {
+      console.error('Error in check_table_exists RPC:', tableCheckError);
+      // Continue anyway, we'll try the query directly
+    }
+    
+    // Try to get the receipt items
+    const { data, error } = await supabase
+      .from('receipt_items')
+      .select('*')
+      .eq('receipt_id', receiptId)
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error getting receipt items:', error);
+      
+      // Check if the error is because the table doesn't exist
+      if (error.code === '42P01') { // relation does not exist
+        throw new Error('receipt_items table does not exist');
+      }
+      
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    console.log(`Found ${data?.length || 0} items for receipt ${receiptId}`);
+    return data || [];
+  } catch (error) {
+    console.error('Error in getReceiptItems:', error);
+    throw error; // Re-throw to be handled by the caller
+  }
+}; 

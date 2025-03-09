@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
-const supabaseUrl = 'https://ilnffpgpzwxnwdobwutf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsbmZmcGdwend4bndkb2J3dXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzNzcxOTgsImV4cCI6MjA1Njk1MzE5OH0.6RsxgBiAkcL2GLjjE2XaiuGT2Cw7aLQy0HS4GZaY1Hw';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL2_0 || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY2_0 || '';
 
 // Create a default anonymous client
 export const supabase = createClient(supabaseUrl, supabaseKey);
@@ -38,18 +38,20 @@ export const getDevBypassClient = () => {
   // This is just for development purposes
   console.warn('Using development bypass client - NEVER use this in production!');
   
-  // For development, we'll use the anonymous client but add headers to help bypass RLS
+  // For development, we'll use the anonymous client with special headers
   return createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: {
-        // These headers might help bypass RLS in development
-        'x-client-info': 'dev-bypass',
-        'x-supabase-auth': 'dev-bypass'
-      }
+    db: {
+      schema: 'public',
     },
     auth: {
       persistSession: false,
       autoRefreshToken: false
+    },
+    global: {
+      headers: {
+        // These headers help bypass RLS in development
+        'x-client-info': 'supabase-js-bypass',
+      }
     }
   });
 }; 

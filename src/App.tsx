@@ -4,12 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, lazy, Suspense } from "react";
 import ErrorBoundary from './components/ErrorBoundary';
-import Debug from './components/Debug';
 import { testDatabaseConnection } from './services/receiptProcessingService';
+import { syncUserWithSupabase, ClerkUser as ClerkUserType } from './services/userService';
 
 // Dynamically import page components
 const Index = lazy(() => import("./pages/Index"));
@@ -24,6 +24,7 @@ const EcoWallet = lazy(() => import("./pages/EcoWallet"));
 const Receiptify = lazy(() => import("./pages/Receiptify"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Features = lazy(() => import("./pages/Features"));
+const SupabaseTest = lazy(() => import("./components/SupabaseTest"));
 
 // Get the publishable key from environment variables
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -39,15 +40,45 @@ const PageLoader = () => (
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
   const location = useLocation();
+  
+  useEffect(() => {
+    // Synchronize the user with Supabase when they sign in
+    const syncUser = async () => {
+      if (isSignedIn && user) {
+        try {
+          // Convert Clerk user to the format expected by syncUserWithSupabase
+          const clerkUser: ClerkUserType = {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            emailAddresses: user.emailAddresses?.map(email => ({
+              emailAddress: email.emailAddress
+            })),
+            imageUrl: user.imageUrl
+          };
+          
+          // Synchronize the user
+          const supabaseUserId = await syncUserWithSupabase(clerkUser);
+          console.log('User synchronized with Supabase:', supabaseUserId);
+        } catch (error) {
+          console.error('Error synchronizing user with Supabase:', error);
+        }
+      }
+    };
+    
+    if (isLoaded && isSignedIn) {
+      syncUser();
+    }
+  }, [isLoaded, isSignedIn, user]);
   
   if (!isLoaded) {
     return <PageLoader />;
   }
   
   if (!isSignedIn) {
-    // Redirect to sign-in page with the return URL
-    return <Navigate to={`/sign-in?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to="/signin" state={{ from: location }} replace />;
   }
   
   return <>{children}</>;
@@ -166,6 +197,11 @@ const AnimatedRoutes = () => {
             <About />
           </Suspense>
         } />
+        <Route path="/supabase-test" element={
+          <Suspense fallback={<PageLoader />}>
+            <SupabaseTest />
+          </Suspense>
+        } />
         <Route path="*" element={
           <Suspense fallback={<PageLoader />}>
             <NotFound />
@@ -204,7 +240,6 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <AnimatedRoutes />
-              <Debug />
             </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>

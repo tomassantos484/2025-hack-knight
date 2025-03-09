@@ -7,11 +7,22 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import ActionHistory from '../components/ActionHistory';
+import { supabase } from '../services/supabaseClient';
 
 const Profile = () => {
   const { signOut, isSignedIn } = useAuth();
   const { user, isLoaded: userIsLoaded } = useUser();
   const navigate = useNavigate();
+  
+  const [userStats, setUserStats] = useState({
+    streak: 0,
+    actions: 0,
+    co2Saved: 0,
+    wasteRecycled: 0,
+    budsEarned: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
   
   // Debug log for authentication state
   useEffect(() => {
@@ -28,6 +39,71 @@ const Profile = () => {
       navigate('/sign-in');
     }
   }, [isSignedIn, navigate]);
+  
+  // Fetch user stats from Supabase
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (!isSignedIn || !user) return;
+      
+      try {
+        setLoadingStats(true);
+        
+        // Get user stats from Supabase
+        const { data: statsData, error: statsError } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (statsError) {
+          console.error('Error fetching user stats:', statsError);
+        } else if (statsData) {
+          // Update stats with data from Supabase
+          setUserStats({
+            streak: 0, // Streak is not tracked in the database yet
+            actions: statsData.total_actions_completed || 0,
+            co2Saved: statsData.total_carbon_footprint || 0,
+            wasteRecycled: 0, // Not tracked in the database yet
+            budsEarned: statsData.total_buds_earned || 0
+          });
+        }
+        
+        // If no stats found, try to calculate them from user actions
+        if (!statsData) {
+          const { data: actionsData, error: actionsError } = await supabase
+            .from('user_actions')
+            .select('*, eco_actions(co2_saved)')
+            .eq('user_id', user.id);
+          
+          if (actionsError) {
+            console.error('Error fetching user actions:', actionsError);
+          } else if (actionsData && actionsData.length > 0) {
+            // Calculate stats from actions
+            const totalActions = actionsData.length;
+            const totalBudsEarned = actionsData.reduce((sum, action) => sum + (action.buds_earned || 0), 0);
+            const totalCO2Saved = actionsData.reduce((sum, action) => {
+              const co2Saved = action.eco_actions?.co2_saved || 0;
+              return sum + co2Saved;
+            }, 0);
+            
+            setUserStats({
+              streak: 0,
+              actions: totalActions,
+              co2Saved: totalCO2Saved,
+              wasteRecycled: 0,
+              budsEarned: totalBudsEarned
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error in fetchUserStats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    
+    fetchUserStats();
+  }, [isSignedIn, user]);
   
   // Format the user's creation date for display
   const formatJoinDate = () => {
@@ -87,9 +163,6 @@ const Profile = () => {
       wasteRecycled: 0
     };
   };
-  
-  // Get user stats
-  const userStats = getUserStats();
   
   // Generate badges based on user data
   const getBadges = () => {
@@ -233,8 +306,13 @@ const Profile = () => {
                 </div>
                 
                 <div className="text-sm">
-                  <span className="font-medium">{userStats.co2Saved} kg</span>
+                  <span className="font-medium">{userStats.co2Saved.toFixed(1)} kg</span>
                   <span className="text-eco-dark/70 ml-1">CO₂ saved</span>
+                </div>
+                
+                <div className="text-sm">
+                  <span className="font-medium">{userStats.budsEarned}</span>
+                  <span className="text-eco-dark/70 ml-1">buds earned</span>
                 </div>
                 
                 <div className="text-sm">
@@ -252,9 +330,9 @@ const Profile = () => {
               <Trophy size={16} />
               Badges
             </TabsTrigger>
-            <TabsTrigger value="challenges" className="flex items-center gap-1.5">
+            <TabsTrigger value="actions" className="flex items-center gap-1.5">
               <BarChart3 size={16} />
-              Challenges
+              Action History
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5">
               <Settings size={16} />
@@ -328,88 +406,10 @@ const Profile = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="challenges" className="mt-0">
-            {recentChallenges.length > 0 ? (
-              <div className="space-y-4">
-                {recentChallenges.map((challenge) => (
-                  <motion.div
-                    key={challenge.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: challenge.id * 0.1 }}
-                    className="bg-white border border-eco-lightGray/50 rounded-xl overflow-hidden eco-shadow"
-                  >
-                    <div className="px-5 py-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium">{challenge.title}</h3>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Calendar size={14} className="text-eco-dark/60" />
-                          <span className="text-xs text-eco-dark/60">{challenge.date}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="mb-1">
-                          {challenge.completed && (
-                            <span className="text-xs px-2 py-0.5 bg-eco-green/10 text-eco-green rounded-full">
-                              Completed
-                            </span>
-                          )}
-                          
-                          {challenge.inProgress && (
-                            <span className="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full">
-                              In Progress
-                            </span>
-                          )}
-                          
-                          {!challenge.completed && !challenge.inProgress && (
-                            <span className="text-xs px-2 py-0.5 bg-eco-dark/10 text-eco-dark/50 rounded-full">
-                              Abandoned
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="text-xs text-eco-dark/70">
-                          {challenge.impact}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4"
-                >
-                  <Leaf size={48} className="mx-auto text-eco-green/50" />
-                </motion.div>
-                <h3 className="text-xl font-medium mb-2">Welcome to EcoVision!</h3>
-                <p className="text-eco-dark/70 max-w-md mx-auto">
-                  Start your eco journey by taking on your first challenge. Complete challenges to earn badges and track your environmental impact.
-                </p>
-              </div>
+          <TabsContent value="actions" className="mt-0">
+            {isSignedIn && user && (
+              <ActionHistory userId={user.id} />
             )}
-            
-            <div className="mt-8 bg-eco-green/5 border border-eco-green/20 rounded-xl p-5">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                  <h3 className="font-medium mb-1">Ready for a new challenge?</h3>
-                  <p className="text-sm text-eco-dark/70">Explore our list of sustainable challenges and test your eco commitment.</p>
-                </div>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-eco-green text-white text-sm rounded-lg hover:bg-eco-green/90 transition-colors whitespace-nowrap"
-                  onClick={() => navigate('/actions')}
-                >
-                  Browse Challenges
-                </motion.button>
-              </div>
-            </div>
           </TabsContent>
           
           <TabsContent value="settings" className="mt-0">
