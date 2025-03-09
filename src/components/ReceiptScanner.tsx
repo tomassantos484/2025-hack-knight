@@ -74,9 +74,9 @@ const ReceiptScanner = () => {
   return (
     <div className="receipt-scanner">
       <input type="file" accept="image/*" onChange={handleFileChange} />
-      <button onClick={handleUpload}>Upload Receipt</button>
-      {ecoScore !== null && <div className="eco-score">Eco Receipt Score: {ecoScore}%</div>}
-      {carbonFootprint !== null && <div className="carbon-footprint">Carbon Footprint: {carbonFootprint} kg CO2</div>}
+      <button onClick={handleUpload}>upload receipt</button>
+      {ecoScore !== null && <div className="eco-score">eco receipt score: {ecoScore}%</div>}
+      {carbonFootprint !== null && <div className="carbon-footprint">carbon footprint: {carbonFootprint} kg CO2</div>}
     </div>
   );
 };

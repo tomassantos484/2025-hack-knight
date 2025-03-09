@@ -445,15 +445,15 @@ const Profile = () => {
           <TabsList className="bg-eco-cream mb-6">
             <TabsTrigger value="badges" className="flex items-center gap-1.5">
               <Trophy size={16} />
-              Badges
+              badges
             </TabsTrigger>
             <TabsTrigger value="actions" className="flex items-center gap-1.5">
               <BarChart3 size={16} />
-              Action History
+              action history
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5">
               <Settings size={16} />
-              Settings
+              settings
             </TabsTrigger>
           </TabsList>
           
@@ -511,8 +511,8 @@ const Profile = () => {
             <div className="mt-8 bg-eco-green/5 border border-eco-green/20 rounded-xl p-5">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
-                  <h3 className="font-medium mb-1">How to earn more badges?</h3>
-                  <p className="text-sm text-eco-dark/70">Complete eco actions and challenges to unlock more badges and track your environmental impact.</p>
+                  <h3 className="font-medium mb-1">how to earn more badges?</h3>
+                  <p className="text-sm text-eco-dark/70">complete eco actions and challenges to unlock more badges and track your environmental impact.</p>
                 </div>
                 
                 <motion.button
@@ -521,7 +521,7 @@ const Profile = () => {
                   className="px-4 py-2 bg-eco-green text-white text-sm rounded-lg hover:bg-eco-green/90 transition-colors whitespace-nowrap"
                   onClick={() => navigate('/actions')}
                 >
-                  Start an Action
+                  start an action
                 </motion.button>
               </div>
             </div>
@@ -536,30 +536,30 @@ const Profile = () => {
           <TabsContent value="settings" className="mt-0">
             <div className="bg-white border border-eco-lightGray/50 rounded-xl overflow-hidden eco-shadow">
               <div className="px-6 py-4 border-b border-eco-lightGray/50">
-                <h3 className="font-medium">Account Settings</h3>
+                <h3 className="font-medium">account settings</h3>
               </div>
               
               <div className="divide-y divide-eco-lightGray/50">
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div>
-                    <h4 className="font-medium">Profile Information</h4>
-                    <p className="text-sm text-eco-dark/70">Update your personal details</p>
+                    <h4 className="font-medium">profile information</h4>
+                    <p className="text-sm text-eco-dark/70">update your personal details</p>
                   </div>
                   <ChevronRight size={20} className="text-eco-dark/40" />
                 </div>
                 
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div>
-                    <h4 className="font-medium">Privacy Settings</h4>
-                    <p className="text-sm text-eco-dark/70">Manage how your data is used</p>
+                    <h4 className="font-medium">privacy settings</h4>
+                    <p className="text-sm text-eco-dark/70">manage how your data is used</p>
                   </div>
                   <ChevronRight size={20} className="text-eco-dark/40" />
                 </div>
                 
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div>
-                    <h4 className="font-medium">Email Preferences</h4>
-                    <p className="text-sm text-eco-dark/70">Control notifications and updates</p>
+                    <h4 className="font-medium">email preferences</h4>
+                    <p className="text-sm text-eco-dark/70">control notifications and updates</p>
                   </div>
                   <ChevronRight size={20} className="text-eco-dark/40" />
                 </div>
@@ -567,7 +567,7 @@ const Profile = () => {
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Bell size={18} className="text-eco-dark/70" />
-                    <h4 className="font-medium">Notifications</h4>
+                    <h4 className="font-medium">notifications</h4>
                   </div>
                   <div className="w-10 h-6 bg-eco-green rounded-full relative">
                     <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
@@ -577,7 +577,7 @@ const Profile = () => {
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Globe size={18} className="text-eco-dark/70" />
-                    <h4 className="font-medium">Location Services</h4>
+                    <h4 className="font-medium">location services</h4>
                   </div>
                   <div className="w-10 h-6 bg-eco-dark/30 rounded-full relative">
                     <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
@@ -588,34 +588,34 @@ const Profile = () => {
             
             <div className="mt-6 bg-white border border-eco-lightGray/50 rounded-xl overflow-hidden eco-shadow">
               <div className="px-6 py-4 border-b border-eco-lightGray/50">
-                <h3 className="font-medium">Help & Resources</h3>
+                <h3 className="font-medium">help & resources</h3>
               </div>
               
               <div className="divide-y divide-eco-lightGray/50">
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">FAQs</h4>
+                    <h4 className="font-medium">faqs</h4>
                   </div>
                   <ExternalLink size={16} className="text-eco-dark/40" />
                 </div>
                 
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">Contact Support</h4>
+                    <h4 className="font-medium">contact support</h4>
                   </div>
                   <ExternalLink size={16} className="text-eco-dark/40" />
                 </div>
                 
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">Privacy Policy</h4>
+                    <h4 className="font-medium">privacy policy</h4>
                   </div>
                   <ExternalLink size={16} className="text-eco-dark/40" />
                 </div>
                 
                 <div className="px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">Terms of Service</h4>
+                    <h4 className="font-medium">terms of service</h4>
                   </div>
                   <ExternalLink size={16} className="text-eco-dark/40" />
                 </div>
@@ -630,7 +630,7 @@ const Profile = () => {
                 onClick={handleSignOut}
               >
                 <LogOut size={16} />
-                Sign Out
+                sign Out
               </motion.button>
             </div>
           </TabsContent>

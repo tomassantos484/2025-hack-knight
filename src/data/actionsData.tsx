@@ -30,7 +30,7 @@ const actionsData: Record<string, Action[]> = {
   [CATEGORIES.TRANSPORTATION]: [
     {
       id: 1,
-      title: 'Used public transit',
+      title: 'used public transit',
       impact: '2.3 kg CO₂ saved',
       category: CATEGORIES.TRANSPORTATION,
       icon: <Train size={18} className="text-eco-dark/80" />,
@@ -38,7 +38,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 2,
-      title: 'Walked instead of drove',
+      title: 'walked instead of drove',
       impact: '1.8 kg CO₂ saved',
       category: CATEGORIES.TRANSPORTATION,
       icon: <Bike size={18} className="text-eco-dark/80" />,
@@ -46,7 +46,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 3,
-      title: 'Carpooled to work',
+      title: 'carpooled to work',
       impact: '1.5 kg CO₂ saved',
       category: CATEGORIES.TRANSPORTATION,
       icon: <Car size={18} className="text-eco-dark/80" />,
@@ -54,7 +54,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 4,
-      title: 'Biked to destination',
+      title: 'biked to destination',
       impact: '2.1 kg CO₂ saved',
       category: CATEGORIES.TRANSPORTATION,
       icon: <Bike size={18} className="text-eco-dark/80" />,
@@ -62,7 +62,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 5,
-      title: 'Took the bus',
+      title: 'took the bus',
       impact: '1.9 kg CO₂ saved',
       category: CATEGORIES.TRANSPORTATION,
       icon: <Bus size={18} className="text-eco-dark/80" />,
@@ -72,7 +72,7 @@ const actionsData: Record<string, Action[]> = {
   [CATEGORIES.WASTE]: [
     {
       id: 6,
-      title: 'Brought reusable mug',
+      title: 'brought reusable mug',
       impact: '0.5 kg waste reduced',
       category: 'waste reduction',
       icon: <Coffee size={18} className="text-eco-dark/80" />,
@@ -80,7 +80,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 7,
-      title: 'Used reusable bags',
+      title: 'used reusable bags',
       impact: '0.3 kg waste reduced',
       category: 'waste reduction',
       icon: <ShoppingBag size={18} className="text-eco-dark/80" />,
@@ -88,7 +88,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 8,
-      title: 'Properly recycled waste',
+      title: 'properly recycled waste',
       impact: '1.2 kg waste diverted',
       category: 'waste reduction',
       icon: <Recycle size={18} className="text-eco-dark/80" />,
@@ -96,7 +96,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 9,
-      title: 'Composted food scraps',
+      title: 'composted food scraps',
       impact: '0.6 kg waste diverted',
       category: 'waste reduction',
       icon: <Trash2 size={18} className="text-eco-dark/80" />,
@@ -106,7 +106,7 @@ const actionsData: Record<string, Action[]> = {
   [CATEGORIES.FOOD]: [
     {
       id: 10,
-      title: 'Ate a meatless meal',
+      title: 'ate a meatless meal',
       impact: '1.5 kg CO₂ saved',
       category: CATEGORIES.FOOD,
       icon: <Utensils size={18} className="text-eco-dark/80" />,
@@ -114,7 +114,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 11,
-      title: 'Bought local produce',
+      title: 'bought local produce',
       impact: '0.4 kg CO₂ saved',
       category: CATEGORIES.FOOD,
       icon: <Leaf size={18} className="text-eco-dark/80" />,
@@ -124,7 +124,7 @@ const actionsData: Record<string, Action[]> = {
   [CATEGORIES.ENERGY]: [
     {
       id: 12,
-      title: 'Used natural lighting',
+      title: 'used natural lighting',
       impact: '0.2 kg CO₂ saved',
       category: CATEGORIES.ENERGY,
       icon: <Sun size={18} className="text-eco-dark/80" />,
@@ -132,7 +132,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 13,
-      title: 'Turned off lights',
+      title: 'turned off lights',
       impact: '0.3 kg CO₂ saved',
       category: CATEGORIES.ENERGY,
       icon: <LightbulbOff size={18} className="text-eco-dark/80" />,
@@ -140,7 +140,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 14,
-      title: 'Took shorter shower',
+      title: 'took shorter shower',
       impact: '0.5 kg CO₂ saved',
       category: CATEGORIES.ENERGY,
       icon: <ShowerHead size={18} className="text-eco-dark/80" />,
@@ -148,7 +148,7 @@ const actionsData: Record<string, Action[]> = {
     },
     {
       id: 15,
-      title: 'Unplugged devices',
+      title: 'unplugged devices',
       impact: '0.2 kg CO₂ saved',
       category: CATEGORIES.ENERGY,
       icon: <Zap size={18} className="text-eco-dark/80" />,
@@ -158,16 +158,16 @@ const actionsData: Record<string, Action[]> = {
   [CATEGORIES.WATER]: [
     {
       id: 16,
-      title: 'Collected rainwater',
-      impact: '50 L water saved',
+      title: 'collected rainwater',
+      impact: '50 l water saved',
       category: CATEGORIES.WATER,
       icon: <Droplets size={18} className="text-eco-dark/80" />,
       co2Saved: 0.1
     },
     {
       id: 17,
-      title: 'Fixed leaky faucet',
-      impact: '70 L water saved daily',
+      title: 'fixed leaky faucet',
+      impact: '70 l water saved daily',
       category: CATEGORIES.WATER,
       icon: <Droplets size={18} className="text-eco-dark/80" />,
       co2Saved: 0.15

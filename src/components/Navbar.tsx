@@ -55,12 +55,12 @@ const Navbar = () => {
     try {
       await signOut();
       // Show success toast
-      toast.success('Signed out successfully');
+      toast.success('signed out successfully');
       // Use React Router's navigate function instead of forcing a page reload
       navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error('failed to sign out. please try again.');
     }
   };
 
@@ -104,7 +104,7 @@ const Navbar = () => {
             >
               <img 
                 src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-                alt="EcoVision Logo" 
+                alt="ecovision logo" 
                 className="h-8 sm:h-10"
               />
             </motion.div>
@@ -138,7 +138,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <div className="text-sm text-eco-dark/80">
-                  {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+                  {userIsLoaded && user ? (user.firstName || user.username || 'user') : 'user'}
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -149,7 +149,7 @@ const Navbar = () => {
                   {userIsLoaded && user?.imageUrl ? (
                     <img 
                       src={user.imageUrl} 
-                      alt="Profile" 
+                      alt="profile" 
                       className="w-7 h-7 rounded-full object-cover"
                     />
                   ) : (
@@ -161,7 +161,7 @@ const Navbar = () => {
                   whileTap={{ scale: 0.95 }}
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
                   onClick={handleSignOut}
-                  aria-label="Sign out"
+                  aria-label="sign out"
                 >
                   <LogOut size={18} className="text-eco-dark" />
                 </motion.button>
@@ -174,7 +174,7 @@ const Navbar = () => {
                   className="px-4 py-2 rounded-md bg-eco-green text-white font-medium text-sm flex items-center"
                 >
                   <User size={16} className="mr-2" />
-                  Sign In
+                  sign in
                 </motion.button>
               </Link>
             )}
@@ -185,7 +185,7 @@ const Navbar = () => {
             <button 
               onClick={() => setIsOpen(!isOpen)}
               className="text-eco-dark p-2 focus:outline-none"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-label={isOpen ? "close menu" : "open menu"}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -224,7 +224,7 @@ const Navbar = () => {
                 className="flex items-center w-full py-3 px-4 rounded-md text-red-500 hover:bg-red-50"
               >
                 <LogOut size={18} className="mr-2" />
-                Sign Out
+                sign out
               </button>
             ) : (
               <Link
@@ -232,7 +232,7 @@ const Navbar = () => {
                 className="flex items-center w-full py-3 px-4 rounded-md text-eco-green font-medium hover:bg-eco-green/10"
               >
                 <User size={18} className="mr-2" />
-                Sign In
+                sign in
               </Link>
             )}
           </div>

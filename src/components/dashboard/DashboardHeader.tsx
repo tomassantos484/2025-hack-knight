@@ -23,7 +23,7 @@ const DashboardHeader = ({
         <Link to="/actions" className="flex items-center">
           <img 
             src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-            alt="EcoVision Logo" 
+            alt="ecovision logo" 
             className="h-8"
           />
         </Link>

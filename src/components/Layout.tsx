@@ -43,12 +43,12 @@ const Layout = ({ children }: LayoutProps) => {
     try {
       await signOut();
       // Show success toast
-      toast.success('Signed out successfully');
+      toast.success('signed out successfully');
       // Use React Router's navigate function instead of window.location.href
       navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error('failed to sign out. please try again.');
     }
   };
 
@@ -61,29 +61,29 @@ const Layout = ({ children }: LayoutProps) => {
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-            alt="EcoVision Logo" 
+            alt="ecovision logo" 
             className="h-10"
           />
         </Link>
         
         <div className="hidden md:flex items-center space-x-10">
           <Link to="/" className="text-gray-800 hover:text-eco-green transition-colors">
-            Home
+            home
           </Link>
           <Link to="/how-it-works" className="text-gray-800 hover:text-eco-green transition-colors">
-            How It Works
+            how it works
           </Link>
           <Link to="/features" className="text-gray-800 hover:text-eco-green transition-colors">
-            Features
+            features
           </Link>
           <Link to="/about" className="text-gray-800 hover:text-eco-green transition-colors">
-            About Us
+            about us
           </Link>
           
           {isSignedIn ? (
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-800">
-                {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+                {userIsLoaded && user ? (user.firstName || user.username || 'user') : 'user'}
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -94,7 +94,7 @@ const Layout = ({ children }: LayoutProps) => {
                 {userIsLoaded && user?.imageUrl ? (
                   <img 
                     src={user.imageUrl} 
-                    alt="Profile" 
+                    alt="profile" 
                     className="w-7 h-7 rounded-full object-cover"
                   />
                 ) : (
@@ -106,7 +106,7 @@ const Layout = ({ children }: LayoutProps) => {
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
                 onClick={handleSignOut}
-                aria-label="Sign out"
+                aria-label="sign out"
               >
                 <LogOut size={18} className="text-eco-dark" />
               </motion.button>
@@ -118,7 +118,7 @@ const Layout = ({ children }: LayoutProps) => {
                 whileTap={{ scale: 0.95 }}
                 className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
               >
-                <span>Sign In</span>
+                <span>sign in</span>
               </motion.button>
             </Link>
           )}
@@ -143,37 +143,37 @@ const Layout = ({ children }: LayoutProps) => {
               <Link to="/" className="flex items-center">
                 <img 
                   src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-                  alt="EcoVision Logo" 
+                  alt="ecovision logo" 
                   className="h-8"
                 />
               </Link>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Track your sustainability journey and make a positive impact on the environment
+                track your sustainability journey and make a positive impact on the environment
               </p>
             </div>
             
             {/* Navigation Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Navigation</h4>
+              <h4 className="text-sm font-medium text-gray-800">navigation</h4>
               <ul className="space-y-2">
                 <li>
                   <Link to="/" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Home
+                    home
                   </Link>
                 </li>
                 <li>
                   <Link to="/how-it-works" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    How It Works
+                    how it works
                   </Link>
                 </li>
                 <li>
                   <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Features
+                    features
                   </Link>
                 </li>
                 <li>
                   <Link to="/about" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    About Us
+                    about us
                   </Link>
                 </li>
               </ul>
@@ -181,16 +181,16 @@ const Layout = ({ children }: LayoutProps) => {
             
             {/* Account Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Account</h4>
+              <h4 className="text-sm font-medium text-gray-800">account</h4>
               <ul className="space-y-2">
                 <li>
                   <Link to="/sign-in" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Sign In
+                    sign in
                   </Link>
                 </li>
                 <li>
                   <Link to="/sign-up" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Sign Up
+                    sign up
                   </Link>
                 </li>
               </ul>
@@ -198,7 +198,7 @@ const Layout = ({ children }: LayoutProps) => {
             
             {/* Connect */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Connect</h4>
+              <h4 className="text-sm font-medium text-gray-800">connect</h4>
               <div className="flex space-x-4">
                 <a href="https://github.com/tomassantos484/2025-hack-knight" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
                   <Github size={20} />

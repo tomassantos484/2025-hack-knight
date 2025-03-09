@@ -89,7 +89,7 @@ const createTestReceipt = async (userId: string): Promise<string | null> => {
       created_at: new Date().toISOString()
     };
     
-    console.log('Inserting test receipt:', testReceipt);
+    console.log('inserting test receipt:', testReceipt);
     
     // Check if the receipts table exists
     try {
@@ -673,7 +673,7 @@ const Receiptify = () => {
             className="text-2xl md:text-3xl font-medium mb-2 flex items-center"
           >
             <Receipt className="mr-2 text-eco-green" size={28} />
-            Receiptify
+            receiptify
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: -10 }}
@@ -681,7 +681,7 @@ const Receiptify = () => {
             transition={{ delay: 0.1 }}
             className="text-eco-dark/70"
           >
-            Scan your receipts to analyze purchases and earn Buds for eco-friendly items
+            scan your receipts to analyze purchases and earn buds for eco-friendly items
           </motion.p>
         </div>
         
@@ -702,9 +702,9 @@ const Receiptify = () => {
                     <Receipt size={32} className="text-eco-green" />
                   </div>
                   
-                  <h2 className="text-xl font-medium mb-2">Upload Your Receipt</h2>
+                  <h2 className="text-xl font-medium mb-2">upload your receipt</h2>
                   <p className="text-eco-dark/70 mb-8 max-w-md mx-auto">
-                    Take a photo or upload an image of your receipt to analyze your purchases and earn Buds for eco-friendly items
+                    take a photo or upload an image of your receipt to analyze your purchases and earn buds for eco-friendly items
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -713,12 +713,12 @@ const Receiptify = () => {
                       className="px-4 py-2 bg-eco-green text-white rounded-lg flex items-center justify-center hover:bg-eco-green/90 transition-colors"
                     >
                       <Camera size={18} className="mr-2" />
-                      Take Photo
+                      take photo
                     </button>
                     
                     <label className="px-4 py-2 bg-eco-cream text-eco-dark rounded-lg flex items-center justify-center hover:bg-eco-cream/80 transition-colors cursor-pointer">
                       <Upload size={18} className="mr-2" />
-                      Upload Image
+                      upload image
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -730,7 +730,7 @@ const Receiptify = () => {
                   </div>
                   
                   <div className="mt-8 border-t border-dashed border-gray-200 pt-6 text-sm text-eco-dark/60">
-                    Drag and drop your receipt image here
+                    drag and drop your receipt image here
                   </div>
                 </div>
               </motion.div>
@@ -745,7 +745,7 @@ const Receiptify = () => {
                 className="bg-white rounded-xl p-6 eco-shadow mb-8"
               >
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-medium">Receipt Preview</h2>
+                  <h2 className="text-xl font-medium">receipt preview</h2>
                   <button
                     onClick={handleReset}
                     className="p-2 text-eco-dark/70 hover:text-eco-dark"
@@ -779,7 +779,7 @@ const Receiptify = () => {
                       </>
                     ) : (
                       <>
-                        Analyze Receipt
+                        analyze receipt
                         <ArrowRight size={16} className="ml-2" />
                       </>
                     )}
@@ -798,10 +798,10 @@ const Receiptify = () => {
               >
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center">
-                    <h2 className="text-2xl font-medium text-[#4a4a4a]">Receipt Analysis</h2>
+                    <h2 className="text-2xl font-medium text-[#4a4a4a]">receipt analysis</h2>
                     {isFromHistory && (
                       <span className="ml-3 px-2 py-1 bg-eco-green/10 text-eco-green text-xs rounded-full">
-                        From History
+                        from history
                       </span>
                     )}
                   </div>
@@ -816,28 +816,28 @@ const Receiptify = () => {
                 {/* Summary Stats - Styled exactly like the image */}
                 <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="bg-[#f9f8f3] rounded-xl p-6">
-                    <div className="text-[#4a4a4a] mb-2">Eco Score</div>
+                    <div className="text-[#4a4a4a] mb-2">eco score</div>
                     <div className="text-[#e6b93c] text-3xl font-medium">
                       {analysis.ecoScore}/100
                     </div>
                   </div>
                   
                   <div className="bg-[#f9f8f3] rounded-xl p-6">
-                    <div className="text-[#4a4a4a] mb-2">Eco Items</div>
+                    <div className="text-[#4a4a4a] mb-2">eco items</div>
                     <div className="text-[#4a4a4a] text-3xl font-medium">
                       {analysis.ecoFriendlyItems}/{analysis.totalItems}
                     </div>
                   </div>
                   
                   <div className="bg-[#f9f8f3] rounded-xl p-6">
-                    <div className="text-[#4a4a4a] mb-2">Carbon Footprint</div>
+                    <div className="text-[#4a4a4a] mb-2">carbon footprint</div>
                     <div className="text-[#4a4a4a] text-3xl font-medium">
                       {analysis.totalCarbonFootprint} kg
                     </div>
                   </div>
                   
                   <div className="bg-[#f9f8f3] rounded-xl p-6">
-                    <div className="text-[#4a4a4a] mb-2">Buds Earned</div>
+                    <div className="text-[#4a4a4a] mb-2">buds earned</div>
                     <div className="text-[#4a9b5c] text-3xl font-medium flex items-center">
                       <Leaf size={24} className="mr-2" />
                       {analysis.budsEarned}
@@ -847,7 +847,7 @@ const Receiptify = () => {
                 
                 {/* Items Analysis - Styled exactly like the image */}
                 <div className="mb-8">
-                  <h3 className="text-2xl font-medium mb-4 text-[#4a4a4a]">Items Analysis</h3>
+                  <h3 className="text-2xl font-medium mb-4 text-[#4a4a4a]">items analysis</h3>
                   
                   <div className="space-y-4">
                     {analysis.items.map(item => (
@@ -879,13 +879,13 @@ const Receiptify = () => {
                               ? 'text-[#4a9b5c]' 
                               : 'text-[#e57373]'
                           }`}>
-                            {item.isEcoFriendly ? 'Eco-friendly' : 'Non-eco'}
+                            {item.isEcoFriendly ? 'eco-friendly' : 'non-eco'}
                           </div>
                         </div>
                         
                         {item.alternativeSuggestion && (
                           <div className="mt-4 text-[#4a4a4a] border border-[#f0d68a] bg-[#fffbeb] p-4 rounded-lg">
-                            <span className="font-medium">Suggestion:</span> {item.alternativeSuggestion}
+                            <span className="font-medium">suggestion:</span> {item.alternativeSuggestion}
                           </div>
                         )}
                       </div>
@@ -899,7 +899,7 @@ const Receiptify = () => {
                     onClick={handleReset}
                     className="px-4 py-2 bg-[#f9f8f3] text-[#4a4a4a] rounded-lg hover:bg-[#f0efe8] transition-colors"
                   >
-                    Scan Another Receipt
+                    scan another receipt
                   </button>
                   
                   <div className="flex gap-2">
@@ -907,7 +907,7 @@ const Receiptify = () => {
                       onClick={() => toast.success('Receipt details saved!')}
                       className="px-4 py-2 bg-[#4a9b5c] text-white rounded-lg hover:bg-[#4a9b5c]/90 transition-colors"
                     >
-                      Save Analysis
+                      save analysis
                     </button>
                   </div>
                 </div>
@@ -926,19 +926,19 @@ const Receiptify = () => {
             >
               <h2 className="text-lg font-medium mb-4 flex items-center">
                 <Clock size={18} className="mr-2 text-eco-dark/70" />
-                Recent Scans
+                recent scans
               </h2>
               
               {isLoadingHistory ? (
                 <div className="text-center py-6 text-eco-dark/70">
                   <div className="w-8 h-8 border-2 border-eco-green border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p>Loading scan history...</p>
+                  <p>loading scan history...</p>
                 </div>
               ) : scanHistory.length === 0 ? (
                 <div className="text-center py-6 text-eco-dark/70">
                   <Receipt size={32} className="mx-auto mb-2 text-eco-dark/30" />
-                  <p>No scan history yet</p>
-                  <p className="text-sm">Scan your first receipt to get started</p>
+                  <p>no scan history yet</p>
+                  <p className="text-sm">scan your first receipt to get started</p>
                   
                   {isSignedIn && (
                     <button
@@ -946,7 +946,7 @@ const Receiptify = () => {
                       className="mt-4 px-3 py-1.5 bg-eco-green/10 text-eco-green text-sm rounded-lg hover:bg-eco-green/20 transition-colors flex items-center mx-auto"
                     >
                       <Plus size={14} className="mr-1" />
-                      Create Test Receipt
+                      create test receipt
                     </button>
                   )}
                 </div>
@@ -963,7 +963,7 @@ const Receiptify = () => {
                           {scan.date}
                           {!isValidUuid(scan.id) && (
                             <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                              Temporary
+                              temporary
                             </span>
                           )}
                         </div>
@@ -992,35 +992,35 @@ const Receiptify = () => {
               transition={{ delay: 0.4 }}
               className="bg-eco-green/10 rounded-xl p-6"
             >
-              <h2 className="text-lg font-medium mb-4">Eco Shopping Tips</h2>
+              <h2 className="text-lg font-medium mb-4">eco shopping tips</h2>
               
               <div className="space-y-4">
                 <div className="flex items-start">
                   <div className="bg-white p-1.5 rounded-full mr-3 mt-0.5">
                     <Leaf size={14} className="text-eco-green" />
                   </div>
-                  <p className="text-sm text-eco-dark/80">Choose products with minimal packaging or recyclable packaging</p>
+                  <p className="text-sm text-eco-dark/80">choose products with minimal packaging or recyclable packaging</p>
                 </div>
                 
                 <div className="flex items-start">
                   <div className="bg-white p-1.5 rounded-full mr-3 mt-0.5">
                     <Leaf size={14} className="text-eco-green" />
                   </div>
-                  <p className="text-sm text-eco-dark/80">Look for certified organic or sustainably sourced products</p>
+                  <p className="text-sm text-eco-dark/80">look for certified organic or sustainably sourced products</p>
                 </div>
                 
                 <div className="flex items-start">
                   <div className="bg-white p-1.5 rounded-full mr-3 mt-0.5">
                     <Leaf size={14} className="text-eco-green" />
                   </div>
-                  <p className="text-sm text-eco-dark/80">Bring your own reusable bags, containers, and produce bags</p>
+                  <p className="text-sm text-eco-dark/80">bring your own reusable bags, containers, and produce bags</p>
                 </div>
                 
                 <div className="flex items-start">
                   <div className="bg-white p-1.5 rounded-full mr-3 mt-0.5">
                     <Leaf size={14} className="text-eco-green" />
                   </div>
-                  <p className="text-sm text-eco-dark/80">Shop local to reduce transportation emissions</p>
+                  <p className="text-sm text-eco-dark/80">shop local to reduce transportation emissions</p>
                 </div>
               </div>
             </motion.div>

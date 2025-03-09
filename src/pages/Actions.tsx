@@ -153,14 +153,14 @@ const Actions = () => {
       const { data, error } = await getEcoActions();
       
       if (error) {
-        console.error('Error fetching eco actions:', error);
+        console.error('error fetching eco actions:', error);
         setActionError(error);
       } else {
         setSupabaseActions(data);
       }
     } catch (err) {
-      console.error('Exception fetching eco actions:', err);
-      setActionError('Failed to load eco actions. Please try again later.');
+      console.error('exception fetching eco actions:', err);
+      setActionError('failed to load eco actions. please try again later.');
     } finally {
       setLoadingActions(false);
     }
@@ -168,7 +168,7 @@ const Actions = () => {
   
   // Debug log for authentication state
   useEffect(() => {
-    console.log('Auth state in Actions:', { 
+    console.log('auth state in actions:', { 
       isSignedIn, 
       user: user?.username || user?.firstName
     });
@@ -197,18 +197,18 @@ const Actions = () => {
   // Function to handle logging an action (marking it as completed)
   const handleLogAction = async () => {
     if (!isSignedIn || !user) {
-      toast.error('You must be signed in to log actions');
+      toast.error('you must be signed in to log actions');
       return;
     }
     
     // Validate form fields
     if (!formAction?.id && !formTitle) {
-      toast.error('Please enter an action title');
+      toast.error('please enter an action title');
       return;
     }
     
     if (!formCategory) {
-      toast.error('Please select a category');
+      toast.error('please select a category');
       return;
     }
     
@@ -217,7 +217,7 @@ const Actions = () => {
       
       // If we have a Supabase action ID, use that
       if (formAction?.id && typeof formAction.id === 'string') {
-        console.log('Logging existing action:', formAction.id);
+        console.log('logging existing action:', formAction.id);
         
         const { data, error } = await logUserAction(
           user.id,
@@ -226,8 +226,8 @@ const Actions = () => {
         );
         
         if (error) {
-          console.error('Error logging action:', error);
-          toast.error('Failed to log action: ' + error);
+          console.error('error logging action:', error);
+          toast.error('failed to log action: ' + error);
         } else {
           console.log('Successfully logged action:', data);
           toast.success('Eco action logged successfully!');
@@ -250,8 +250,8 @@ const Actions = () => {
         );
         
         if (error) {
-          console.error('Error logging custom action:', error);
-          toast.error('Failed to log custom action: ' + error);
+          console.error('error logging custom action:', error);
+          toast.error('failed to log custom action: ' + error);
         } else {
           console.log('Successfully logged custom action:', data);
           
@@ -270,8 +270,8 @@ const Actions = () => {
         }
       }
     } catch (err) {
-      console.error('Exception logging action:', err);
-      toast.error('An unexpected error occurred. Please try again.');
+      console.error('exception logging action:', err);
+      toast.error('an unexpected error occurred. please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -373,7 +373,7 @@ const Actions = () => {
           
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-eco-green" />
-            <span className="ml-2 text-eco-dark/70">Loading eco actions...</span>
+            <span className="ml-2 text-eco-dark/70">loading eco actions...</span>
           </div>
         </div>
       </DashboardLayout>
@@ -382,7 +382,7 @@ const Actions = () => {
   
   // If there was an error loading actions, show fallback to local data
   if (actionError || !supabaseActions) {
-    console.warn('Using local actions data due to error:', actionError);
+    console.warn('using local actions data due to error:', actionError);
   }
   
   // Use Supabase actions if available, otherwise fall back to local data
@@ -423,7 +423,7 @@ const Actions = () => {
               className="bg-eco-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-eco-green/90 transition-colors flex items-center gap-1.5"
             >
               <PlusCircle size={16} />
-              Log New Action
+              log new action
             </motion.button>
           </div>
           
@@ -546,7 +546,7 @@ const Actions = () => {
             >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">
-                  {formAction && formAction.title ? `Log: ${formAction.title}` : 'Log Custom Action'}
+                  {formAction && formAction.title ? `log: ${formAction.title}` : 'log custom action'}
                 </h2>
                 <button onClick={closeForm} className="text-eco-dark/70 hover:text-eco-dark">
                   <X size={20} />
@@ -556,10 +556,10 @@ const Actions = () => {
               <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleLogAction(); }}>
                 {!formAction?.title && (
                   <div>
-                    <label className="block text-sm font-medium mb-1">Action Title</label>
+                    <label className="block text-sm font-medium mb-1">action title</label>
                     <input 
                       type="text" 
-                      placeholder="What eco-friendly action did you take?"
+                      placeholder="what eco-friendly action did you take?"
                       className="w-full p-2 border border-eco-lightGray/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green"
                       value={formTitle}
                       onChange={(e) => setFormTitle(e.target.value)}
@@ -569,14 +569,14 @@ const Actions = () => {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <label className="block text-sm font-medium mb-1">category</label>
                   <select 
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
                     className="w-full p-2 border border-eco-lightGray/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green"
                     required
                   >
-                    <option value="" disabled>Select a category</option>
+                    <option value="" disabled>select a category</option>
                     <option value="transportation">{CATEGORY_OPTIONS.transportation}</option>
                     <option value="waste">{CATEGORY_OPTIONS.waste}</option>
                     <option value="food">{CATEGORY_OPTIONS.food}</option>
@@ -587,7 +587,7 @@ const Actions = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Date</label>
+                  <label className="block text-sm font-medium mb-1">date</label>
                   <input 
                     type="date" 
                     value={formDate}
@@ -598,9 +598,9 @@ const Actions = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
+                  <label className="block text-sm font-medium mb-1">notes (optional)</label>
                   <textarea 
-                    placeholder="Any additional details about this action..."
+                    placeholder="any additional details about this action..."
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
                     className="w-full p-2 border border-eco-lightGray/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green"
@@ -615,7 +615,7 @@ const Actions = () => {
                     className="px-4 py-2 border border-eco-lightGray rounded-lg text-eco-dark/80 hover:bg-eco-lightGray/20 transition-colors"
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    cancel
                   </button>
                   <button
                     type="submit"
@@ -625,12 +625,12 @@ const Actions = () => {
                     {isSubmitting ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Logging...
+                        logging...
                       </>
                     ) : (
                       <>
                         <Check size={16} />
-                        Log Action
+                        log action
                       </>
                     )}
                   </button>

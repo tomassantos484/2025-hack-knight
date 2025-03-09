@@ -20,7 +20,7 @@ const UserMenu = ({
   return (
     <div className="flex items-center space-x-4">
       <div className="hidden md:block text-sm text-gray-700">
-        {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+        {userIsLoaded && user ? (user.firstName || user.username || 'user') : 'user'}
       </div>
       
       <div className="relative">
@@ -31,7 +31,7 @@ const UserMenu = ({
           {userIsLoaded && user?.imageUrl ? (
             <img 
               src={user.imageUrl} 
-              alt="Profile" 
+              alt="profile" 
               className="w-7 h-7 rounded-full object-cover"
             />
           ) : (
@@ -45,7 +45,7 @@ const UserMenu = ({
         whileTap={{ scale: 0.95 }}
         className="hidden md:flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
         onClick={onSignOut}
-        aria-label="Sign out"
+        aria-label="sign out"
       >
         <LogOut size={18} className="text-eco-dark" />
       </motion.button>

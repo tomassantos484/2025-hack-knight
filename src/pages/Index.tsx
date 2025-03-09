@@ -107,7 +107,7 @@ const Index = () => {
               className="flex flex-col items-center cursor-pointer"
               onClick={() => scrollToSection('how-it-works')}
             >
-              <span className="text-xs text-eco-dark/60 mb-2">Scroll to explore</span>
+              <span className="text-xs text-eco-dark/60 mb-2">scroll to explore</span>
               <div className="w-6 h-10 border-2 border-eco-dark/30 rounded-full flex justify-center">
                 <motion.div 
                   animate={{ y: [0, 8, 0] }}
@@ -165,9 +165,9 @@ const Index = () => {
               <div className="w-16 h-16 flex items-center justify-center mb-6">
                 <Camera size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Trash Scanner</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">trash scanner</h3>
               <p className="text-eco-dark/80 leading-relaxed mb-4">
-                Upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
+                upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
               </p>
             </motion.div>
 
@@ -221,9 +221,9 @@ const Index = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-medium text-eco-dark mb-4">Why Choose EcoVision?</h2>
+            <h2 className="text-4xl font-medium text-eco-dark mb-4">why choose ecovision?</h2>
             <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto">
-              Our platform provides the tools you need to make sustainable choices and track your positive impact on the environment.
+              our platform provides the tools you need to make sustainable choices and track your positive impact on the environment.
             </p>
           </motion.div>
 
@@ -239,9 +239,9 @@ const Index = () => {
               <div className="w-16 h-16 flex items-center justify-center mb-6">
                 <Globe size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Community Impact</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">community impact</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Join thousands of environmentally conscious individuals working together to create a more sustainable future.
+                join thousands of environmentally conscious individuals working together to create a more sustainable future.
               </p>
             </motion.div>
 
@@ -256,9 +256,9 @@ const Index = () => {
               <div className="w-16 h-16 flex items-center justify-center mb-6">
                 <Camera size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Trash Scanner</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">trash scanner</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
+                upload photos of waste items to learn how to properly dispose of them and reduce your environmental impact.
               </p>
             </motion.div>
 
@@ -273,9 +273,9 @@ const Index = () => {
               <div className="w-16 h-16 flex items-center justify-center mb-6">
                 <Wallet size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">EcoWallet</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">ecowallet</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Earn "Buds" for eco-friendly actions and redeem them for digital badges, eco-friendly merchandise, or donations.
+                earn "buds" for eco-friendly actions and redeem them for digital badges, eco-friendly merchandise, or donations.
               </p>
             </motion.div>
 
@@ -290,9 +290,9 @@ const Index = () => {
               <div className="w-16 h-16 flex items-center justify-center mb-6">
                 <Receipt size={42} className="text-eco-green" />
               </div>
-              <h3 className="text-xl font-medium text-eco-dark mb-3">Receiptify</h3>
+              <h3 className="text-xl font-medium text-eco-dark mb-3">receiptify</h3>
               <p className="text-eco-dark/80 leading-relaxed">
-                Scan your receipts to analyze purchases, earn Buds for eco-friendly items, and get personalized sustainability recommendations.
+                scan your receipts to analyze purchases, earn Buds for eco-friendly items, and get personalized sustainability recommendations.
               </p>
             </motion.div>
           </div>
@@ -465,7 +465,7 @@ const Index = () => {
               <div className="rounded-2xl overflow-hidden shadow-lg eco-shadow">
                 <img 
                   src="https://images.unsplash.com/photo-1519389950473-47ba0277781c" 
-                  alt="EcoVision Team" 
+                  alt="ecovision team" 
                   className="w-full h-auto object-cover aspect-[4/3]" 
                 />
               </div>
@@ -484,16 +484,16 @@ const Index = () => {
                 <span className="text-sm text-eco-dark/80">our story</span>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-medium text-eco-dark">Meet the Team Behind EcoVision</h2>
+              <h2 className="text-3xl md:text-4xl font-medium text-eco-dark">meet the team behind ecovision</h2>
               
               <p className="text-lg text-eco-dark/80 leading-relaxed">
-                We're a passionate group of environmentalists, designers, and developers united by a common goal: 
-                to make sustainability accessible and measurable for everyone. Our diverse backgrounds bring 
+                we're a passionate group of environmentalists, designers, and developers united by a common goal: 
+                to make sustainability accessible and measurable for everyone. our diverse backgrounds bring 
                 unique perspectives to solving one of the most pressing challenges of our time.
               </p>
               
               <p className="text-lg text-eco-dark/80 leading-relaxed">
-                Founded in 2025, our team is committed to creating intuitive tools that help individuals 
+                founded in 2025, our team is committed to creating intuitive tools that help individuals 
                 understand and reduce their environmental impact through small, consistent actions.
               </p>
               

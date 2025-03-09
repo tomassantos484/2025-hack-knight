@@ -53,12 +53,12 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
     try {
       await signOut();
       // Show success toast
-      toast.success('Signed out successfully');
+      toast.success('signed out successfully');
       // Use React Router's navigate function instead of window.location.href
       navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error('failed to sign out. please try again.');
     }
   };
 
@@ -71,7 +71,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-            alt="EcoVision Logo" 
+            alt="ecovision logo" 
             className="h-10"
           />
         </Link>
@@ -83,7 +83,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
-            Home
+            home
           </Link>
           <Link 
             to="/how-it-works" 
@@ -91,7 +91,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
-            How It Works
+            how it works
           </Link>
           <Link 
             to="/features" 
@@ -99,7 +99,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
-            Features
+            features
           </Link>
           <Link 
             to="/about" 
@@ -107,7 +107,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
             }`}
           >
-            About Us
+            about us
           </Link>
           
           {isSignedIn ? (
@@ -115,7 +115,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               <div className={`text-sm ${
                 scrolled ? 'text-gray-800' : 'text-eco-dark'
               }`}>
-                {userIsLoaded && user ? (user.firstName || user.username || 'User') : 'User'}
+                {userIsLoaded && user ? (user.firstName || user.username || 'user') : 'user'}
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -126,7 +126,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                 {userIsLoaded && user?.imageUrl ? (
                   <img 
                     src={user.imageUrl} 
-                    alt="Profile" 
+                    alt="profile" 
                     className="w-7 h-7 rounded-full object-cover"
                   />
                 ) : (
@@ -138,7 +138,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-eco-cream hover:bg-eco-lightGray transition-colors"
                 onClick={handleSignOut}
-                aria-label="Sign out"
+                aria-label="sign out"
               >
                 <LogOut size={18} className="text-eco-dark" />
               </motion.button>
@@ -150,7 +150,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                 whileTap={{ scale: 0.95 }}
                 className="bg-eco-green text-white px-5 py-2 rounded-md flex items-center space-x-2"
               >
-                <span>Sign In</span>
+                <span>sign in</span>
               </motion.button>
             </Link>
           )}
@@ -188,8 +188,8 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               className="text-3xl md:text-4xl font-medium text-eco-dark mb-6"
             >
               {isSignedIn 
-                ? "Continue your sustainability journey" 
-                : "Ready to start your sustainability journey?"}
+                ? "continue your sustainability journey" 
+                : "ready to start your sustainability journey?"}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -199,8 +199,8 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               className="text-lg text-eco-dark/80 mb-8"
             >
               {isSignedIn
-                ? "Track your actions, measure your impact, and continue making a difference for our planet."
-                : "Join thousands of eco-conscious individuals making a difference for our planet. Track your actions, measure your impact, and be part of the solution."}
+                ? "track your actions, measure your impact, and continue making a difference for our planet."
+                : "join thousands of eco-conscious individuals making a difference for our planet. track your actions, measure your impact, and be part of the solution."}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -245,18 +245,18 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
               <Link to="/" className="flex items-center">
                 <img 
                   src="/lovable-uploads/19d21855-df32-4986-8eba-bab60462047b.png" 
-                  alt="EcoVision Logo" 
+                  alt="ecovision logo" 
                   className="h-8"
                 />
               </Link>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Track your sustainability journey and make a positive impact on the environment
+                track your sustainability journey and make a positive impact on the environment
               </p>
             </div>
             
             {/* Navigation Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Navigation</h4>
+              <h4 className="text-sm font-medium text-gray-800">navigation</h4>
               <ul className="space-y-2">
                 <li>
                   <a 
@@ -264,22 +264,22 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                     onClick={scrollToSection('home')}
                     className="text-sm text-gray-600 hover:text-eco-green transition-colors"
                   >
-                    Home
+                    home
                   </a>
                 </li>
                 <li>
                   <Link to="/how-it-works" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    How It Works
+                    how it works
                   </Link>
                 </li>
                 <li>
                   <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    Features
+                    features
                   </Link>
                 </li>
                 <li>
                   <Link to="/about" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                    About Us
+                    about us
                   </Link>
                 </li>
               </ul>
@@ -287,18 +287,18 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
             
             {/* Account Links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Account</h4>
+              <h4 className="text-sm font-medium text-gray-800">account</h4>
               <ul className="space-y-2">
                 {isSignedIn ? (
                   <>
                     <li>
                       <Link to="/profile" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                        Profile
+                        profile
                       </Link>
                     </li>
                     <li>
                       <Link to="/actions" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                        Dashboard
+                        dashboard
                       </Link>
                     </li>
                     <li>
@@ -306,7 +306,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                         onClick={handleSignOut}
                         className="text-sm text-gray-600 hover:text-eco-green transition-colors"
                       >
-                        Sign Out
+                        sign out
                       </button>
                     </li>
                   </>
@@ -314,12 +314,12 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                   <>
                     <li>
                       <Link to="/sign-in" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                        Sign In
+                        sign in
                       </Link>
                     </li>
                     <li>
                       <Link to="/sign-up" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
-                        Sign Up
+                        sign up
                       </Link>
                     </li>
                   </>
@@ -329,7 +329,7 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
             
             {/* Connect */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-800">Connect</h4>
+              <h4 className="text-sm font-medium text-gray-800">connect</h4>
               <div className="flex space-x-4">
                 <a href="https://github.com/tomassantos484/2025-hack-knight" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-eco-green transition-colors">
                   <Github size={20} />

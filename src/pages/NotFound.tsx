@@ -10,7 +10,7 @@ const NotFound = () => {
   useEffect(() => {
     // Log the 404 error with more context
     console.error(
-      "404 Error: User attempted to access non-existent route:",
+      "404 error: user attempted to access non-existent route:",
       {
         path: location.pathname,
         referrer: document.referrer,
@@ -25,10 +25,10 @@ const NotFound = () => {
 
   // Common navigation links that might be helpful
   const commonLinks = [
-    { name: "Home", path: "/" },
-    { name: "Actions Dashboard", path: "/actions" },
-    { name: "EcoWallet", path: "/eco-wallet" },
-    { name: "About", path: "/about" }
+    { name: "home", path: "/" },
+    { name: "actions dashboard", path: "/actions" },
+    { name: "ecowallet", path: "/eco-wallet" },
+    { name: "about", path: "/about" }
   ];
 
   return (
@@ -41,16 +41,16 @@ const NotFound = () => {
           className="text-center max-w-lg px-4"
         >
           <h1 className="text-7xl font-bold text-eco-green mb-6">404</h1>
-          <h2 className="text-2xl font-medium text-eco-dark mb-4">Page Not Found</h2>
+          <h2 className="text-2xl font-medium text-eco-dark mb-4">page not found</h2>
           <p className="text-eco-dark/70 mb-6">
-            The page you're looking for doesn't exist or has been moved.
+            the page you're looking for doesn't exist or has been moved.
           </p>
           
           {/* Helpful suggestions */}
           <div className="bg-gray-50 rounded-lg p-4 mb-8 text-left">
             <h3 className="text-sm font-medium text-eco-dark mb-2 flex items-center">
               <HelpCircle size={16} className="mr-2 text-eco-green" />
-              Try one of these instead:
+              try one of these instead:
             </h3>
             <ul className="space-y-2 text-sm">
               {commonLinks.map((link) => (
@@ -75,7 +75,7 @@ const NotFound = () => {
                 className="bg-eco-green text-white px-6 py-3 rounded-full flex items-center"
               >
                 <Home size={18} className="mr-2" />
-                <span>Return to Home</span>
+                <span>return to home</span>
               </motion.button>
             </Link>
             
@@ -86,7 +86,7 @@ const NotFound = () => {
               className="border border-eco-green text-eco-green px-6 py-3 rounded-full flex items-center"
             >
               <ArrowLeft size={18} className="mr-2" />
-              <span>Go Back</span>
+              <span>go back</span>
             </motion.button>
           </div>
         </motion.div>

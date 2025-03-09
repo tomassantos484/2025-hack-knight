@@ -28,21 +28,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success('Signed out successfully');
+      toast.success('signed out successfully');
       navigate('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error('failed to sign out. please try again.');
     }
   };
 
   // Dashboard navigation items
   const navItems: NavItem[] = [
-    { name: 'Dashboard', path: '/actions', icon: <BarChart3 size={18} /> },
-    { name: 'Trash Scanner', path: '/trash-scanner', icon: <Camera size={18} /> },
-    { name: 'EcoWallet', path: '/eco-wallet', icon: <Wallet size={18} /> },
-    { name: 'Receiptify', path: '/receiptify', icon: <Receipt size={18} /> },
-    { name: 'Profile', path: '/profile', icon: <User size={18} /> }
+    { name: 'dashboard', path: '/actions', icon: <BarChart3 size={18} /> },
+    { name: 'trash scanner', path: '/trash-scanner', icon: <Camera size={18} /> },
+    { name: 'ecowallet', path: '/eco-wallet', icon: <Wallet size={18} /> },
+    { name: 'receiptify', path: '/receiptify', icon: <Receipt size={18} /> },
+    { name: 'profile', path: '/profile', icon: <User size={18} /> }
   ];
 
   return (

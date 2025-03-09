@@ -177,7 +177,7 @@ const EcoWallet = () => {
   // Handle redemption
   const handleRedeem = async (item: RedemptionItem) => {
     if (!isSignedIn || !user) {
-      toast.error('You must be signed in to redeem items.');
+      toast.error('you must be signed in to redeem items.');
       return;
     }
     
@@ -217,7 +217,7 @@ const EcoWallet = () => {
       const success = await spendBuds(
         user.id,
         item.budsCost,
-        `Redeemed: ${item.name}`
+        `redeemed: ${item.name}`
       );
       
       if (success) {
@@ -233,14 +233,14 @@ const EcoWallet = () => {
         toast.error('Failed to redeem item. You may not have enough Buds.');
       }
     } catch (error) {
-      console.error('Error redeeming item:', error);
-      toast.error('Failed to redeem item. Please try again.');
+      console.error('error redeeming item:', error);
+      toast.error('failed to redeem item. please try again.');
     }
   };
   
   // Handle connecting bank account (Plaid integration placeholder)
   const handleConnectBank = () => {
-    toast.success('Bank connection feature coming soon!');
+    toast.success('bank connection feature coming soon!');
   };
   
   // Get score color
@@ -271,8 +271,8 @@ const EcoWallet = () => {
       path: '/receiptify'
     },
     {
-      name: 'Scan Trash',
-      description: 'Properly dispose of waste items',
+      name: 'scan trash',
+      description: 'properly dispose of waste items',
       icon: <Camera size={24} className="text-eco-green" />,
       path: '/trash-scanner'
     }
@@ -288,7 +288,7 @@ const EcoWallet = () => {
             className="text-2xl md:text-3xl font-medium mb-2 flex items-center"
           >
             <Wallet className="mr-2 text-eco-green" size={28} />
-            EcoWallet
+            ecowallet
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: -10 }}
@@ -296,7 +296,7 @@ const EcoWallet = () => {
             transition={{ delay: 0.1 }}
             className="text-eco-dark/70"
           >
-            Earn and spend Buds for your eco-friendly actions
+            earn and spend Buds for your eco-friendly actions
           </motion.p>
         </div>
         
@@ -403,7 +403,7 @@ const EcoWallet = () => {
           transition={{ delay: 0.3 }}
           className="glass-card p-6 mb-8 rounded-xl"
         >
-          <h2 className="text-xl font-medium mb-4">Ways to Earn Buds</h2>
+          <h2 className="text-xl font-medium mb-4">ways to earn buds</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {budEarningActions.map((action, index) => (
@@ -441,7 +441,7 @@ const EcoWallet = () => {
                   : 'bg-eco-light/30 hover:bg-eco-light/50'
               }`}
             >
-              All
+              all
             </button>
             <button
               onClick={() => setSelectedCategory('badge')}

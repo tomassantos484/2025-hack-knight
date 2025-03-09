@@ -10,62 +10,62 @@ const Features = () => {
   const features = [
     {
       icon: <Recycle className="w-10 h-10 text-eco-green" />,
-      title: "Trash Scanner",
-      description: "Our AI-powered scanner identifies items and provides guidance on recycling, composting, or proper disposal methods.",
+      title: "trash scanner",
+      description: "our AI-powered scanner identifies items and provides guidance on recycling, composting, or proper disposal methods.",
       benefits: [
-        "Reduce waste contamination",
-        "Learn proper recycling habits",
-        "Decrease landfill contributions"
+        "reduce waste contamination",
+        "learn proper recycling habits",
+        "decrease landfill contributions"
       ]
     },
     {
       icon: <BarChart3 className="w-10 h-10 text-eco-green" />,
-      title: "Progress Tracking",
-      description: "Monitor your environmental impact with detailed statistics and visualizations. Watch your eco-footprint shrink over time.",
+      title: "progress Tracking",
+      description: "monitor your environmental impact with detailed statistics and visualizations. watch your eco-footprint shrink over time.",
       benefits: [
-        "Visual progress metrics",
-        "Monthly impact reports",
-        "Customizable goals"
+        "visual progress metrics",
+        "monthly impact reports",
+        "customizable goals"
       ]
     },
     {
       icon: <Award className="w-10 h-10 text-eco-green" />,
-      title: "Eco Challenges",
-      description: "Engage in daily and weekly challenges to develop sustainable habits. Compete with friends and earn badges for your achievements.",
+      title: "eco challenges",
+      description: "engage in daily and weekly challenges to develop sustainable habits. compete with friends and earn badges for your achievements.",
       benefits: [
-        "Gamified sustainability",
-        "Learn new eco habits",
-        "Community engagement"
+        "gamified sustainability",
+        "learn new eco habits",
+        "community engagement"
       ]
     },
     {
       icon: <Leaf className="w-10 h-10 text-eco-green" />,
-      title: "Eco Tips",
-      description: "Receive personalized recommendations and tips to reduce your environmental footprint in daily life.",
+      title: "eco tips",
+      description: "receive personalized recommendations and tips to reduce your environmental footprint in daily life.",
       benefits: [
-        "Personalized guidance",
-        "Easy implementation",
-        "Cumulative impact"
+        "personalized guidance",
+        "easy implementation",
+        "cumulative impact"
       ]
     },
     {
       icon: <PiggyBank className="w-10 h-10 text-eco-green" />,
-      title: "Eco Wallet",
-      description: "Earn eco-credits for your sustainable actions. Redeem them for discounts on eco-friendly products from our partners.",
+      title: "eco Wallet",
+      description: "earn eco-credits for your sustainable actions. redeem them for discounts on eco-friendly products from our partners.",
       benefits: [
-        "Rewards for eco actions",
-        "Partner discounts",
-        "Track savings"
+        "rewards for eco actions",
+        "partner discounts",
+        "track savings"
       ]
     },
     {
       icon: <Users className="w-10 h-10 text-eco-green" />,
-      title: "Community Connection",
-      description: "Connect with like-minded individuals in your area. Organize and participate in local environmental initiatives.",
+      title: "community connection",
+      description: "connect with like-minded individuals in your area. organize and participate in local environmental initiatives.",
       benefits: [
-        "Local connections",
-        "Community events",
-        "Collaborative impact"
+        "local connections",
+        "community events",
+        "collaborative impact"
       ]
     },
   ];
@@ -132,7 +132,7 @@ const Features = () => {
       });
       setCarbonFootprint(response.data.total_carbon);
     } catch (error) {
-      console.error('Error calculating carbon footprint:', error);
+      console.error('error calculating carbon footprint:', error);
     }
   };
 
@@ -148,7 +148,7 @@ const Features = () => {
         >
           <h1 className="text-4xl md:text-5xl text-eco-dark mb-6">ecovision features</h1>
           <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto">
-            Comprehensive tools to help you track, reduce, and optimize your environmental impact while building sustainable habits.
+            comprehensive tools to help you track, reduce, and optimize your environmental impact while building sustainable habits.
           </p>
         </motion.div>
 
@@ -194,10 +194,10 @@ const Features = () => {
         >
           <Zap className="w-12 h-12 text-eco-green mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-eco-dark mb-4">
-            Ready to Transform Your Environmental Impact?
+            ready to transform your environmental impact?
           </h2>
           <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto mb-8">
-            Join thousands of users who are making a difference every day with EcoVision.
+            join thousands of users who are making a difference every day with ecovision.
           </p>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -205,7 +205,7 @@ const Features = () => {
             className="bg-eco-green text-white px-8 py-3 rounded-md inline-flex items-center space-x-2 hover:bg-eco-green/90 transition-colors"
           >
             <Link to="/sign-up" className="flex items-center space-x-2">
-              <span>Sign Up Now</span>
+              <span>sign up now</span>
             </Link>
           </motion.button>
         </motion.div>
