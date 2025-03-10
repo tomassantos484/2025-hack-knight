@@ -59,3 +59,9 @@ __pycache__/
 
 .vercelignore
 .txt
+
+#Railway backend
+.flask-backend/
+
+#api
+.api/

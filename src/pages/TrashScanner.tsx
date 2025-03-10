@@ -5,6 +5,7 @@ import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loade
 import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trashScanner';
 import { useAuth } from '@clerk/clerk-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 // Interface for scan history item
 interface ScanHistoryItem {
@@ -23,6 +24,22 @@ interface ScanResult {
   buds_reward?: number;
   offline_mode?: boolean;
 }
+
+// Helper function to convert file to base64
+const fileToBase64 = (file: string | File): Promise<string> => {
+  // If file is already a string (base64), return it
+  if (typeof file === 'string') {
+    return Promise.resolve(file);
+  }
+  
+  // Otherwise, convert File to base64
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
 
 const TrashScanner = () => {
   const { isSignedIn } = useAuth();
@@ -82,6 +99,13 @@ const TrashScanner = () => {
     };
     
     checkApiConnection();
+    
+    // Set up periodic API connection checks
+    const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
+    
+    return () => {
+      clearInterval(intervalId); // Clean up on unmount
+    };
   }, []);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,48 +141,76 @@ const TrashScanner = () => {
   };
   
   const scanImage = async () => {
-    if (!imagePreview) return;
-    
+    if (!imagePreview) {
+      toast.error("Please select an image first");
+      return;
+    }
+
     setIsScanning(true);
     setError(null);
     setScanResult(null);
-    
+
     try {
-      // If we're in offline mode or API is not connected, use mock data
-      if (offlineMode || !apiConnected) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      // Convert the file to base64
+      const base64Image = await fileToBase64(imagePreview);
+      
+      // If we're in offline mode, show a toast notification
+      if (offlineMode) {
+        toast.info("Using offline mode for classification. Results may be less accurate.", {
+          duration: 5000,
+        });
+      }
+
+      // Call the API to classify the image
+      const result = await classifyTrashImage(base64Image);
+      
+      // Check if the result indicates offline mode was used
+      if (result.offline_mode && !offlineMode) {
+        setOfflineMode(true);
+        setApiError("API server is in offline mode. Results may be less accurate.");
+        toast.info("Using offline mode for classification. Results may be less accurate.", {
+          duration: 5000,
+        });
+      }
+
+      console.log("Scan result:", result);
+      setScanResult(result);
+      
+      // Save the result to history
+      saveToHistory(result);
+      
+      // Award buds if available
+      if (result.buds_reward && result.buds_reward > 0) {
+        toast.success(`You earned ${result.buds_reward} Buds for scanning trash!`, {
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Error scanning image:", error);
+      setError("Failed to scan the image. Please try again.");
+      
+      // If there's an error, try to use offline mode
+      setOfflineMode(true);
+      setApiError("Error connecting to the API server. Using offline mode.");
+      
+      // Try again in offline mode
+      try {
+        toast.info("Retrying in offline mode. Results may be less accurate.", {
+          duration: 5000,
+        });
         
-        // Mock result
-        const mockResult: ScanResult = {
-          category: ['recycle', 'compost', 'landfill'][Math.floor(Math.random() * 3)] as 'recycle' | 'compost' | 'landfill',
-          confidence: Math.floor(Math.random() * 30) + 70, // 70-99%
-          details: `This item appears to be ${['recyclable', 'compostable', 'non-recyclable trash'][Math.floor(Math.random() * 3)]}. Using offline mode due to API connection issues.`,
-          tips: [
-            "When in doubt, check your local recycling guidelines.",
-            "Clean items before recycling to avoid contamination.",
-            "Consider reducing waste by using reusable alternatives."
-          ],
-          environmental_impact: "Using offline mode - environmental impact data not available.",
-          buds_reward: 5,
-          offline_mode: true
-        };
+        const base64Image = await fileToBase64(imagePreview);
+        const result = await classifyTrashImage(base64Image);
         
-        setScanResult(mockResult);
-        
-        // Save to scan history
-        saveToHistory(mockResult);
-      } else {
-        // Use the actual API
-        const result = await classifyTrashImage(imagePreview);
+        console.log("Offline scan result:", result);
         setScanResult(result);
         
-        // Save to scan history
+        // Save the result to history
         saveToHistory(result);
+      } catch (offlineError) {
+        console.error("Error in offline mode:", offlineError);
+        setError("Failed to scan the image even in offline mode. Please try again later.");
       }
-    } catch (err) {
-      console.error('Error scanning image:', err);
-      setError('Failed to analyze the image. Please try again.');
     } finally {
       setIsScanning(false);
     }
@@ -226,7 +278,7 @@ const TrashScanner = () => {
   // Add a function to test the API directly
   const testApiDirectly = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://2025-hack-knight.vercel.app';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
       console.log('Testing API directly at:', apiUrl);
       
       const response = await fetch(`${apiUrl}/api/test?t=${new Date().getTime()}`);

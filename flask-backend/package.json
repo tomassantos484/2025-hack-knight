@@ -1,0 +1,12 @@
+{
+  "name": "ecovision-backend",
+  "version": "1.0.0",
+  "description": "Flask backend for EcoVision application",
+  "main": "index.js",
+  "scripts": {
+    "start": "python app.py"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 

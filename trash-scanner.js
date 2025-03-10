@@ -4,7 +4,7 @@
  */
 
 // Configuration
-const API_BASE_URL = 'http://localhost:5002'; // Update this to match your Flask API server
+const API_BASE_URL = 'https://ecovision-backend-production.up.railway.app'; // Railway deployment URL
 
 // Category configuration
 const categoryConfig = {

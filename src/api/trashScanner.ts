@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-// Use environment variable if available, otherwise use the deployed backend URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://2025-hack-knight.vercel.app';
+// Use environment variable if available, otherwise use the Railway URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
 
 console.log('Using API base URL:', API_BASE_URL);
 
@@ -33,39 +33,28 @@ export const testApiConnection = async (): Promise<boolean> => {
     const url = `${API_BASE_URL}/api/test?t=${timestamp}`;
     console.log('Full URL:', url);
     
-    const response = await axios.get(url, {
-      // Add timeout to prevent hanging
-      timeout: 5000,
-      // Add headers to help with CORS
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('API connection test response:', response.status, response.data);
-    OFFLINE_MODE = false;
-    return response.status === 200;
-  } catch (error) {
-    console.error('Error connecting to API server:', error);
-    // Log more details about the error
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response ? {
-          status: error.response.status,
-          data: error.response.data
-        } : 'No response',
-        request: error.request ? 'Request was made but no response received' : 'No request was made'
+    try {
+      const response = await axios.get(url, {
+        // Add timeout to prevent hanging
+        timeout: 5000,
+        // Add headers to help with CORS
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       
-      // If we get a 402 Payment Required error, enable offline mode
-      if (error.response && error.response.status === 402) {
-        console.log('Backend hit payment limit, enabling offline mode');
-        OFFLINE_MODE = true;
-      }
+      console.log('API connection test response:', response.status, response.data);
+      OFFLINE_MODE = false;
+      return response.status === 200;
+    } catch (error) {
+      console.error('API connection failed, using offline mode:', error);
+      OFFLINE_MODE = true;
+      return false;
     }
+  } catch (error) {
+    console.error('Error connecting to API server:', error);
+    OFFLINE_MODE = true;
     return false;
   }
 };
@@ -93,31 +82,30 @@ export const classifyTrashImage = async (imageBase64: string): Promise<TrashScan
     
     console.log('Sending request to:', `${API_BASE_URL}/api/classify-trash`);
     
-    const response = await axios.post(`${API_BASE_URL}/api/classify-trash`, {
-      image: formattedImageData
-    }, {
-      // Add timeout to prevent hanging
-      timeout: 30000,
-      // Add headers to help with CORS
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('API response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error classifying trash image:', error);
-    
-    // If we get a 402 Payment Required error, enable offline mode and return a mock result
-    if (axios.isAxiosError(error) && error.response && error.response.status === 402) {
-      console.log('Backend hit payment limit, enabling offline mode');
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/classify-trash`, {
+        image: formattedImageData
+      }, {
+        // Add timeout to prevent hanging
+        timeout: 30000,
+        // Add headers to help with CORS
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('API response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Classification request failed, using offline mode:', error);
       OFFLINE_MODE = true;
       return generateMockResult();
     }
-    
-    throw error;
+  } catch (error) {
+    console.error('Error classifying trash image:', error);
+    OFFLINE_MODE = true;
+    return generateMockResult();
   }
 };
 

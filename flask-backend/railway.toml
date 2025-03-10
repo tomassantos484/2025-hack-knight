@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python app.py"
+healthcheckPath = "/api/test"
+healthcheckTimeout = 100
+restartPolicy = "on-failure"
+numFailures = 10 
