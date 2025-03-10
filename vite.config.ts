@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => {
     },
     // Define env variables to expose to the client
     define: {
+      // Safely expose environment variables without logging them
       'import.meta.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
     build: {

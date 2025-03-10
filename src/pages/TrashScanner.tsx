@@ -284,18 +284,18 @@ const TrashScanner = () => {
   const testApiDirectly = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
-      console.log('Testing API directly at:', apiUrl);
+      console.log('Testing API connection...');
       
       const response = await fetch(`${apiUrl}/api/test?t=${new Date().getTime()}`);
       const data = await response.json();
       
-      console.log('Direct API test response:', data);
-      alert(`API Test Result: ${JSON.stringify(data, null, 2)}`);
+      console.log('API test successful');
+      alert(`API Test Result: Connection successful`);
       
       return true;
     } catch (error) {
-      console.error('Error testing API directly:', error);
-      alert(`API Test Error: ${error.message}`);
+      console.error('Error testing API connection');
+      alert(`API Test Error: Could not connect to the API`);
       return false;
     }
   };

@@ -33,8 +33,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files - never commit these to version control
+.env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.test
+.env.production
 
 # vercel
 .vercel
@@ -65,3 +71,25 @@ __pycache__/
 
 #api
 .api/
+
+# Local Netlify folder
+.netlify
+
+# Logs
+logs
+*.log
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

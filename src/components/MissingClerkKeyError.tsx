@@ -1,4 +1,3 @@
-
 const MissingClerkKeyError = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
@@ -12,7 +11,7 @@ const MissingClerkKeyError = () => {
             Please add the Clerk Publishable Key to your <code className="bg-gray-200 px-1 rounded">.env</code> file:
           </p>
           <pre className="bg-gray-800 text-green-400 p-2 rounded mt-2 overflow-x-auto text-xs">
-            VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+            VITE_CLERK_PUBLISHABLE_KEY=YOUR_CLERK_KEY
           </pre>
         </div>
         <p className="text-sm text-gray-500 mb-4">

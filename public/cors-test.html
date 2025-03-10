@@ -37,8 +37,8 @@
     <button id="testRailway">Test Railway API</button>
     <div id="railwayResult" class="result">Results will appear here...</div>
     
-    <h2>3. Test Vercel API</h2>
-    <button id="testVercel">Test Vercel API</button>
+    <h2>3. Test Railway API (Alternative)</h2>
+    <button id="testVercel">Test Railway API (Alternative)</button>
     <div id="vercelResult" class="result">Results will appear here...</div>
     
     <script>
@@ -49,9 +49,9 @@
             try {
                 const response = await fetch('/api/cors-test');
                 const data = await response.json();
-                resultDiv.textContent = `Local API test successful!\nResponse: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.textContent = `Local API test successful!`;
             } catch (error) {
-                resultDiv.textContent = `Local API test failed: ${error.message}`;
+                resultDiv.textContent = `Local API test failed`;
             }
         });
         
@@ -62,22 +62,22 @@
             try {
                 const response = await fetch('https://ecovision-backend-production.up.railway.app/api/test');
                 const data = await response.json();
-                resultDiv.textContent = `Railway API test successful!\nResponse: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.textContent = `Railway API test successful!`;
             } catch (error) {
-                resultDiv.textContent = `Railway API test failed: ${error.message}`;
+                resultDiv.textContent = `Railway API test failed`;
             }
         });
         
         // Vercel API endpoint
         document.getElementById('testVercel').addEventListener('click', async () => {
             const resultDiv = document.getElementById('vercelResult');
-            resultDiv.textContent = 'Testing Vercel API...';
+            resultDiv.textContent = 'Testing Railway API (Alternative)...';
             try {
-                const response = await fetch('https://ecovision-backend.vercel.app/api/test');
+                const response = await fetch('https://ecovision-backend-production.up.railway.app/api/test');
                 const data = await response.json();
-                resultDiv.textContent = `Vercel API test successful!\nResponse: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.textContent = `Railway API test successful!`;
             } catch (error) {
-                resultDiv.textContent = `Vercel API test failed: ${error.message}`;
+                resultDiv.textContent = `Railway API test failed`;
             }
         });
     </script>

@@ -4,11 +4,8 @@ import axios from 'axios';
 // Use environment variable if available, otherwise use the Railway URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
 
-// Log detailed information about the API URL
-console.log('API URL Debug Info:');
-console.log('- Environment variable:', import.meta.env.VITE_API_BASE_URL);
-console.log('- Fallback URL:', 'https://ecovision-backend-production.up.railway.app');
-console.log('- Using API base URL:', API_BASE_URL);
+// Log basic information about the API URL
+console.log('Using API base URL for trash scanner');
 
 // Flag to enable offline mode if backend is unavailable
 let OFFLINE_MODE = false;
