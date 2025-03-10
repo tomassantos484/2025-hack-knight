@@ -379,4 +379,82 @@ const ensureUserTableHasClerkIdColumn = async (): Promise<void> => {
   } catch (error) {
     console.error('Error in ensureUserTableHasClerkIdColumn:', error);
   }
+};
+
+/**
+ * Update a user's profile information in Supabase
+ * 
+ * @param userId The Supabase user ID
+ * @param profileData Object containing display_name and bio
+ * @returns Boolean indicating success or failure
+ */
+export const updateUserProfile = async (
+  userId: string, 
+  profileData: { displayName: string; bio: string }
+): Promise<boolean> => {
+  try {
+    if (!userId) {
+      console.error('No user ID provided for profile update');
+      return false;
+    }
+
+    console.log('Updating user profile in Supabase:', userId);
+    
+    // Prepare update data
+    const updateData: Record<string, string> = {
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add display_name if provided
+    if (profileData.displayName) {
+      updateData.display_name = profileData.displayName;
+    }
+    
+    // Check if bio column exists and add it if it does
+    try {
+      const { error: testBioError } = await supabase
+        .from('users')
+        .select('bio')
+        .limit(1);
+      
+      // If no error about missing column, we can update bio
+      if (!testBioError || !testBioError.message || !testBioError.message.includes('column "bio" does not exist')) {
+        updateData.bio = profileData.bio || '';
+      } else {
+        // Bio column doesn't exist, try to add it
+        try {
+          // This would require admin privileges, so it might fail in production
+          // In a real app, you'd handle this with a migration script
+          const { error: alterTableError } = await supabase.rpc('add_bio_column_if_not_exists');
+          
+          if (!alterTableError) {
+            updateData.bio = profileData.bio || '';
+          } else {
+            console.error('Could not add bio column:', alterTableError);
+          }
+        } catch (e) {
+          console.error('Error adding bio column:', e);
+        }
+      }
+    } catch (e) {
+      console.error('Error testing bio column:', e);
+    }
+    
+    // Update the user record
+    const { error: updateError } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId);
+    
+    if (updateError) {
+      console.error('Error updating user profile:', updateError);
+      return false;
+    }
+    
+    console.log('User profile updated successfully:', userId);
+    return true;
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    return false;
+  }
 }; 

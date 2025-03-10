@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
-import { useAuth, useUser } from '@clerk/clerk-react';
-import { Wallet, Leaf, Gift, TreePine, Waves, Badge as BadgeIcon, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt, Award } from 'lucide-react';
-import { toast } from 'sonner';
-import { getBudsBalance, getTransactions, spendBuds, Transaction as WalletTransaction } from '../services/walletService';
-import { getAllBadges, getUserBadges, awardBadge, Badge as BadgeType } from '../services/badgeService';
 import { Link } from 'react-router-dom';
+import { Wallet, Leaf, Gift, TreePine, Waves, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt, Award } from 'lucide-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
 import { supabase } from '../services/supabaseClient';
 import { formatUuid } from '../services/ecoActionsService';
+import { earnBuds, spendBuds, getTransactions } from '../services/walletService';
 
 // Interface for redemption items
 interface RedemptionItem {
-  id: string | number;
+  id: string;
   name: string;
   description: string;
   budsCost: number;
-  image?: string;
-  category: 'badge' | 'merch' | 'donation';
+  category: 'merch' | 'donation';
   icon: React.ReactNode;
-  badge?: BadgeType;
 }
+
+// Interface for wallet transactions
+type WalletTransaction = {
+  id: string;
+  user_id: string;
+  type: 'earned' | 'spent';
+  amount: number;
+  description: string;
+  created_at: string;
+};
 
 const EcoWallet = () => {
   const { isSignedIn } = useAuth();
@@ -30,7 +37,7 @@ const EcoWallet = () => {
   const [budsBalance, setBudsBalance] = useState<number>(0);
   
   // State for selected category
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'badge' | 'merch' | 'donation'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'merch' | 'donation'>('all');
   
   // State for showing transaction history
   const [showHistory, setShowHistory] = useState<boolean>(false);
@@ -40,9 +47,6 @@ const EcoWallet = () => {
   
   // State for redemption items
   const [redemptionItems, setRedemptionItems] = useState<RedemptionItem[]>([]);
-  
-  // State for user badges
-  const [userBadges, setUserBadges] = useState<string[]>([]);
   
   // State for loading
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,9 +81,10 @@ const EcoWallet = () => {
           // Also update the balance in the database to fix any discrepancies
           try {
             // Use the RPC function to ensure consistency with how other parts of the app update the balance
-            const { error } = await supabase.rpc('fix_user_buds_balance', {
+            const { error } = await supabase.rpc('update_buds_balance', {
               p_user_id: formatUuid(user.id),
-              p_correct_balance: calculatedBalance
+              p_amount: calculatedBalance,
+              p_is_earning: true
             });
             
             if (error) {
@@ -99,36 +104,7 @@ const EcoWallet = () => {
             console.error('Error updating buds balance:', updateError);
           }
           
-          // Get all available badges
-          const { data: badges, error: badgesError } = await getAllBadges();
-          
-          if (badgesError) {
-            console.error('Error fetching badges:', badgesError);
-          }
-          
-          // Get user's badges
-          const { data: userBadgesData, error: userBadgesError } = await getUserBadges(user.id);
-          
-          if (userBadgesError) {
-            console.error('Error fetching user badges:', userBadgesError);
-          }
-          
-          // Create a list of badge IDs the user already has
-          const userBadgeIds = userBadgesData?.map(ub => ub.badge_id) || [];
-          setUserBadges(userBadgeIds);
-          
-          // Create redemption items from badges
-          const badgeItems: RedemptionItem[] = badges?.map(badge => ({
-            id: badge.id,
-            name: badge.name,
-            description: badge.description,
-            budsCost: badge.buds_reward,
-            category: 'badge',
-            icon: <BadgeIcon size={24} className="text-eco-green" />,
-            badge: badge
-          })) || [];
-          
-          // Add other redemption items
+          // Add redemption items
           const otherItems: RedemptionItem[] = [
             {
               id: 'merch-1',
@@ -156,7 +132,7 @@ const EcoWallet = () => {
             }
           ];
           
-          setRedemptionItems([...badgeItems, ...otherItems]);
+          setRedemptionItems(otherItems);
         } catch (error) {
           console.error('Error loading user data:', error);
           toast.error('Failed to load your Buds balance and transaction history.');
@@ -177,64 +153,42 @@ const EcoWallet = () => {
   // Handle redemption
   const handleRedeem = async (item: RedemptionItem) => {
     if (!isSignedIn || !user) {
-      toast.error('you must be signed in to redeem items.');
+      toast.error('You must be signed in to redeem items.');
       return;
     }
     
     try {
-      // Check if this is a badge and if the user already has it
-      if (item.category === 'badge' && item.badge) {
-        if (userBadges.includes(item.badge.id)) {
-          toast.error('You already have this badge!');
-          return;
-        }
-        
-        // Award the badge directly
-        const { success, error } = await awardBadge(user.id, item.badge.name);
-        
-        if (success) {
-          // Update local state
-          setUserBadges([...userBadges, item.badge.id]);
-          
-          // No need to spend buds as the badge award function handles that
-          toast.success(`Badge earned: ${item.name}`);
-          
-          // Refresh user data
-          const balance = await getBudsBalance(user.id);
-          setBudsBalance(balance);
-          
-          const txHistory = await getTransactions(user.id);
-          setTransactions(txHistory);
-          
-          return;
-        } else {
-          toast.error(`Failed to earn badge: ${error}`);
-          return;
-        }
-      }
-      
-      // For non-badge items, spend buds
+      // Spend buds for the item
       const success = await spendBuds(
         user.id,
         item.budsCost,
-        `redeemed: ${item.name}`
+        `Redeemed: ${item.name}`
       );
       
       if (success) {
-        // Update local state
-        setBudsBalance(prev => prev - item.budsCost);
+        toast.success(`Successfully redeemed ${item.name}!`);
         
-        // Refresh transaction history
-        const updatedTransactions = await getTransactions(user.id);
-        setTransactions(updatedTransactions);
+        // Update balance
+        const txHistory = await getTransactions(user.id);
+        setTransactions(txHistory);
         
-        toast.success(`Successfully redeemed: ${item.name}`);
+        // Recalculate balance
+        const newBalance = txHistory.reduce((total, tx) => {
+          if (tx.type === 'earned') {
+            return total + tx.amount;
+          } else if (tx.type === 'spent') {
+            return total - tx.amount;
+          }
+          return total;
+        }, 0);
+        
+        setBudsBalance(newBalance);
       } else {
-        toast.error('Failed to redeem item. You may not have enough Buds.');
+        toast.error('Failed to redeem item. Please try again.');
       }
     } catch (error) {
-      console.error('error redeeming item:', error);
-      toast.error('failed to redeem item. please try again.');
+      console.error('Error redeeming item:', error);
+      toast.error('An error occurred while redeeming the item.');
     }
   };
   
@@ -444,17 +398,6 @@ const EcoWallet = () => {
               all
             </button>
             <button
-              onClick={() => setSelectedCategory('badge')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
-                selectedCategory === 'badge' 
-                  ? 'bg-eco-green text-white' 
-                  : 'bg-eco-light/30 hover:bg-eco-light/50'
-              }`}
-            >
-              <BadgeIcon size={16} className="mr-1" />
-              Badges
-            </button>
-            <button
               onClick={() => setSelectedCategory('merch')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
                 selectedCategory === 'merch' 
@@ -488,14 +431,10 @@ const EcoWallet = () => {
           ) : filteredItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item) => {
-                const isOwned = item.category === 'badge' && item.badge && userBadges.includes(item.badge.id);
-                
                 return (
                   <div 
                     key={item.id}
-                    className={`border border-eco-light rounded-lg overflow-hidden transition-all ${
-                      isOwned ? 'bg-eco-light/10' : 'hover:shadow-md'
-                    }`}
+                    className={`border border-eco-light rounded-lg overflow-hidden transition-all`}
                   >
                     <div className="p-4">
                       <div className="flex items-center mb-2">
@@ -510,15 +449,13 @@ const EcoWallet = () => {
                       <p className="text-sm text-eco-dark/70 mb-4">{item.description}</p>
                       <button
                         onClick={() => handleRedeem(item)}
-                        disabled={budsBalance < item.budsCost || isOwned}
+                        disabled={budsBalance < item.budsCost}
                         className={`w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center ${
-                          budsBalance >= item.budsCost && !isOwned
-                            ? 'bg-eco-green text-white hover:bg-eco-green/90'
-                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          budsBalance >= item.budsCost ? 'bg-eco-green text-white hover:bg-eco-green/90' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        {isOwned ? 'Already Owned' : budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
-                        {!isOwned && budsBalance >= item.budsCost && <ArrowRight size={16} className="ml-1" />}
+                        {budsBalance >= item.budsCost ? 'Redeem' : 'Not Enough Buds'}
+                        {budsBalance >= item.budsCost && <ArrowRight size={16} className="ml-1" />}
                       </button>
                     </div>
                   </div>

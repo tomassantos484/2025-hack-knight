@@ -11,6 +11,14 @@ import ActionHistory from '../components/ActionHistory';
 import { supabase } from '../services/supabaseClient';
 import { formatUuid, refreshUserStats } from '../services/ecoActionsService';
 import { Badge, UserBadge, getUserBadges, checkAndAwardBadges, awardBadge } from '../services/badgeService';
+import { updateUserProfile, getUserByClerkId } from '../services/userService';
+
+// Extended Badge type with earned and eligible properties
+interface ExtendedBadge extends Badge {
+  earned: boolean;
+  eligible?: boolean;
+  date?: string | null;
+}
 
 const Profile = () => {
   const { signOut, isSignedIn } = useAuth();
@@ -26,8 +34,26 @@ const Profile = () => {
   });
   const [loadingStats, setLoadingStats] = useState(true);
   const [refreshingStats, setRefreshingStats] = useState(false);
-  const [badges, setBadges] = useState<(Badge & { earned: boolean, date?: string | null })[]>([]);
+  const [badges, setBadges] = useState<ExtendedBadge[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
+  
+  // User settings state
+  const [userSettings, setUserSettings] = useState({
+    notifications: true,
+    locationServices: false,
+    emailPreferences: {
+      actionReminders: true,
+      weeklyDigest: true,
+      promotions: false
+    },
+    privacySettings: {
+      shareData: false,
+      anonymizeStats: true
+    }
+  });
+  
+  // State for modals
+  const [activeModal, setActiveModal] = useState<string | null>(null);
   
   // Debug log for authentication state
   useEffect(() => {
@@ -178,6 +204,16 @@ const Profile = () => {
         // Check for and award badges based on user actions
         await checkAndAwardBadges(user.id);
         
+        // Get all available badges
+        const { data: allBadges, error: badgesError } = await supabase
+          .from('badges')
+          .select('*');
+        
+        if (badgesError) {
+          console.error('Error fetching all badges:', badgesError);
+          return;
+        }
+        
         // Get user badges
         const { data: userBadges, error } = await getUserBadges(user.id);
         
@@ -192,24 +228,53 @@ const Profile = () => {
           if (success) {
             // Fetch badges again after awarding
             const { data: updatedBadges } = await getUserBadges(user.id);
-            if (updatedBadges) {
-              // Format badges for display
-              const formattedBadges = updatedBadges.map(userBadge => ({
-                ...userBadge.badge!,
-                earned: true,
-                date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
-              }));
-              
-              setBadges(formattedBadges);
-            }
+            
+            // Create a map of earned badges
+            const earnedBadgesMap = new Map();
+            updatedBadges?.forEach(userBadge => {
+              if (userBadge.badge) {
+                earnedBadgesMap.set(userBadge.badge.id, {
+                  ...userBadge.badge,
+                  earned: true,
+                  date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
+                });
+              }
+            });
+            
+            // Combine with all badges to show both earned and available
+            const formattedBadges = allBadges?.map(badge => {
+              const earnedBadge = earnedBadgesMap.get(badge.id);
+              return earnedBadge || {
+                ...badge,
+                earned: false,
+                eligible: false // Default to ineligible
+              };
+            }) || [];
+            
+            setBadges(formattedBadges);
           }
         } else {
-          // Format badges for display
-          const formattedBadges = userBadges.map(userBadge => ({
-            ...userBadge.badge!,
-            earned: true,
-            date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
-          }));
+          // Create a map of earned badges
+          const earnedBadgesMap = new Map();
+          userBadges.forEach(userBadge => {
+            if (userBadge.badge) {
+              earnedBadgesMap.set(userBadge.badge.id, {
+                ...userBadge.badge,
+                earned: true,
+                date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
+              });
+            }
+          });
+          
+          // Combine with all badges to show both earned and available
+          const formattedBadges = allBadges?.map(badge => {
+            const earnedBadge = earnedBadgesMap.get(badge.id);
+            return earnedBadge || {
+              ...badge,
+              earned: false,
+              eligible: isEligibleForBadge(badge.name, userStats) // Check eligibility
+            };
+          }) || [];
           
           setBadges(formattedBadges);
         }
@@ -221,7 +286,27 @@ const Profile = () => {
     };
     
     fetchUserBadges();
-  }, [isSignedIn, user]);
+  }, [isSignedIn, user, userStats]);
+  
+  // Check if user is eligible for a badge
+  const isEligibleForBadge = (badgeName: string, stats: typeof userStats): boolean => {
+    switch (badgeName) {
+      case 'Early Adopter':
+        return true; // Everyone is eligible for Early Adopter
+      case 'Waste Warrior':
+        return stats.actions >= 5; // Eligible after 5 actions
+      case 'Transit Champion':
+        return stats.actions >= 10; // Eligible after 10 actions
+      case 'Plant Power':
+        return stats.actions >= 15; // Eligible after 15 actions
+      case 'Eco Streak':
+        return stats.streak >= 7; // Eligible after 7-day streak
+      case 'Energy Saver':
+        return stats.co2Saved >= 50; // Eligible after saving 50kg CO2
+      default:
+        return false;
+    }
+  };
   
   // Format the user's creation date for display
   const formatJoinDate = () => {
@@ -346,6 +431,446 @@ const Profile = () => {
     } finally {
       setRefreshingStats(false);
     }
+  };
+
+  // Handle claiming a badge
+  const handleClaimBadge = async (badgeName: string) => {
+    if (!isSignedIn || !user) return;
+    
+    try {
+      // Award the badge
+      const { success, error } = await awardBadge(user.id, badgeName);
+      
+      if (success) {
+        toast.success(`Badge earned: ${badgeName}`);
+        
+        // Refresh badges
+        const { data: updatedBadges } = await getUserBadges(user.id);
+        
+        // Get all available badges again
+        const { data: allBadges } = await supabase
+          .from('badges')
+          .select('*');
+        
+        if (updatedBadges && allBadges) {
+          // Create a map of earned badges
+          const earnedBadgesMap = new Map();
+          updatedBadges.forEach(userBadge => {
+            if (userBadge.badge) {
+              earnedBadgesMap.set(userBadge.badge.id, {
+                ...userBadge.badge,
+                earned: true,
+                date: userBadge.earned_at ? format(new Date(userBadge.earned_at), 'MMM yyyy') : null
+              });
+            }
+          });
+          
+          // Combine with all badges
+          const formattedBadges = allBadges.map(badge => {
+            const earnedBadge = earnedBadgesMap.get(badge.id);
+            return earnedBadge || {
+              ...badge,
+              earned: false,
+              eligible: isEligibleForBadge(badge.name, userStats)
+            };
+          });
+          
+          setBadges(formattedBadges);
+        }
+      } else {
+        toast.error(`Failed to earn badge: ${error}`);
+      }
+    } catch (err) {
+      console.error('Error claiming badge:', err);
+      toast.error('An error occurred while claiming the badge.');
+    }
+  };
+
+  // Handle toggle switches
+  const handleToggle = (setting: 'notifications' | 'locationServices') => {
+    setUserSettings(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
+    
+    // Show success toast
+    toast.success(`${setting === 'notifications' ? 'Notifications' : 'Location services'} ${userSettings[setting] ? 'disabled' : 'enabled'}`);
+    
+    // In a real app, you would save this to the database
+    // For now, we'll just save to localStorage
+    setTimeout(() => {
+      localStorage.setItem('userSettings', JSON.stringify({
+        ...userSettings,
+        [setting]: !userSettings[setting]
+      }));
+    }, 0);
+  };
+  
+  // Handle opening a settings modal
+  const openSettingsModal = (modalName: string) => {
+    setActiveModal(modalName);
+  };
+  
+  // Handle closing a modal
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+  
+  // Handle saving email preferences
+  const saveEmailPreferences = (preferences: typeof userSettings.emailPreferences) => {
+    setUserSettings(prev => ({
+      ...prev,
+      emailPreferences: preferences
+    }));
+    
+    // Show success toast
+    toast.success('Email preferences updated');
+    
+    // Save to localStorage
+    setTimeout(() => {
+      localStorage.setItem('userSettings', JSON.stringify({
+        ...userSettings,
+        emailPreferences: preferences
+      }));
+    }, 0);
+    
+    // Close the modal
+    closeModal();
+  };
+  
+  // Handle saving privacy settings
+  const savePrivacySettings = (settings: typeof userSettings.privacySettings) => {
+    setUserSettings(prev => ({
+      ...prev,
+      privacySettings: settings
+    }));
+    
+    // Show success toast
+    toast.success('Privacy settings updated');
+    
+    // Save to localStorage
+    setTimeout(() => {
+      localStorage.setItem('userSettings', JSON.stringify({
+        ...userSettings,
+        privacySettings: settings
+      }));
+    }, 0);
+    
+    // Close the modal
+    closeModal();
+  };
+  
+  // Handle updating profile information
+  const updateProfileInfo = async (profileData: { displayName: string, bio: string }) => {
+    if (!isSignedIn || !user) {
+      toast.error('You must be signed in to update your profile');
+      return;
+    }
+    
+    try {
+      // Show loading toast
+      toast.loading('Updating profile information...');
+      
+      // Get the Supabase user ID from the Clerk ID
+      const supabaseUserId = await getUserByClerkId(user.id);
+      
+      if (!supabaseUserId) {
+        toast.error('Could not find your user account');
+        return;
+      }
+      
+      // Update the profile in Supabase
+      const success = await updateUserProfile(supabaseUserId, profileData);
+      
+      if (success) {
+        toast.success('Profile information updated successfully');
+      } else {
+        toast.error('Failed to update profile information');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('An error occurred while updating your profile');
+    } finally {
+      // Close the modal
+      closeModal();
+    }
+  };
+
+  // Load user settings from localStorage
+  useEffect(() => {
+    const loadUserSettings = () => {
+      const savedSettings = localStorage.getItem('userSettings');
+      if (savedSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedSettings);
+          setUserSettings(prev => ({
+            ...prev,
+            ...parsedSettings
+          }));
+        } catch (err) {
+          console.error('Error loading user settings:', err);
+        }
+      }
+    };
+    
+    loadUserSettings();
+  }, []);
+
+  // Profile Info Modal
+  const ProfileInfoModal = ({ 
+    isOpen, 
+    onClose, 
+    onSave, 
+    user 
+  }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onSave: (data: { displayName: string; bio: string }) => void; 
+    user: { id: string; firstName?: string | null; lastName?: string | null } 
+  }) => {
+    const [displayName, setDisplayName] = useState(user?.firstName || '');
+    const [bio, setBio] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    
+    // Fetch current profile data when modal opens
+    useEffect(() => {
+      const fetchProfileData = async () => {
+        if (isOpen && isSignedIn && user) {
+          setIsLoading(true);
+          try {
+            // Get the Supabase user ID from the Clerk ID
+            const supabaseUserId = await getUserByClerkId(user.id);
+            
+            if (supabaseUserId) {
+              // Fetch the user data from Supabase
+              const { data, error } = await supabase
+                .from('users')
+                .select('display_name, bio')
+                .eq('id', supabaseUserId)
+                .single();
+              
+              if (!error && data) {
+                // Set the display name and bio from the database
+                setDisplayName(data.display_name || user?.firstName || '');
+                setBio(data.bio || '');
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching profile data:', error);
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      };
+      
+      fetchProfileData();
+    }, [isOpen, isSignedIn, user]);
+    
+    if (!isOpen) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <h2 className="text-xl font-medium mb-4">Update Profile Information</h2>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="w-8 h-8 border-2 border-eco-green border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Display Name</label>
+                <input 
+                  type="text" 
+                  value={displayName} 
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Bio</label>
+                <textarea 
+                  value={bio} 
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-24"
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave({ displayName, bio })}
+              disabled={isLoading}
+              className="px-4 py-2 bg-eco-green text-white rounded-md text-sm disabled:bg-eco-green/50"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Email Preferences Modal
+  const EmailPreferencesModal = ({ 
+    isOpen, 
+    onClose, 
+    onSave, 
+    preferences 
+  }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onSave: (preferences: { actionReminders: boolean; weeklyDigest: boolean; promotions: boolean }) => void; 
+    preferences: { actionReminders: boolean; weeklyDigest: boolean; promotions: boolean } 
+  }) => {
+    const [actionReminders, setActionReminders] = useState(preferences.actionReminders);
+    const [weeklyDigest, setWeeklyDigest] = useState(preferences.weeklyDigest);
+    const [promotions, setPromotions] = useState(preferences.promotions);
+    
+    if (!isOpen) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <h2 className="text-xl font-medium mb-4">Email Preferences</h2>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Action Reminders</h3>
+                <p className="text-sm text-eco-dark/70">Receive reminders to complete eco actions</p>
+              </div>
+              <div 
+                className={`w-10 h-6 ${actionReminders ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                onClick={() => setActionReminders(!actionReminders)}
+              >
+                <div className={`absolute ${actionReminders ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Weekly Digest</h3>
+                <p className="text-sm text-eco-dark/70">Receive a weekly summary of your eco impact</p>
+              </div>
+              <div 
+                className={`w-10 h-6 ${weeklyDigest ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                onClick={() => setWeeklyDigest(!weeklyDigest)}
+              >
+                <div className={`absolute ${weeklyDigest ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Promotions & News</h3>
+                <p className="text-sm text-eco-dark/70">Receive updates about eco-friendly products and news</p>
+              </div>
+              <div 
+                className={`w-10 h-6 ${promotions ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                onClick={() => setPromotions(!promotions)}
+              >
+                <div className={`absolute ${promotions ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave({ actionReminders, weeklyDigest, promotions })}
+              className="px-4 py-2 bg-eco-green text-white rounded-md text-sm"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Privacy Settings Modal
+  const PrivacySettingsModal = ({ 
+    isOpen, 
+    onClose, 
+    onSave, 
+    settings 
+  }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onSave: (settings: { shareData: boolean; anonymizeStats: boolean }) => void; 
+    settings: { shareData: boolean; anonymizeStats: boolean } 
+  }) => {
+    const [shareData, setShareData] = useState(settings.shareData);
+    const [anonymizeStats, setAnonymizeStats] = useState(settings.anonymizeStats);
+    
+    if (!isOpen) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <h2 className="text-xl font-medium mb-4">Privacy Settings</h2>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Share Usage Data</h3>
+                <p className="text-sm text-eco-dark/70">Help us improve by sharing anonymous usage data</p>
+              </div>
+              <div 
+                className={`w-10 h-6 ${shareData ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                onClick={() => setShareData(!shareData)}
+              >
+                <div className={`absolute ${shareData ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Anonymize Statistics</h3>
+                <p className="text-sm text-eco-dark/70">Hide your identity in public statistics</p>
+              </div>
+              <div 
+                className={`w-10 h-6 ${anonymizeStats ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                onClick={() => setAnonymizeStats(!anonymizeStats)}
+              >
+                <div className={`absolute ${anonymizeStats ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave({ shareData, anonymizeStats })}
+              className="px-4 py-2 bg-eco-green text-white rounded-md text-sm"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Show loading state while user data is loading
@@ -476,23 +1001,63 @@ const Profile = () => {
                   </motion.div>
                 ))
               ) : badges.length > 0 ? (
-                // Display earned badges
+                // Display badges
                 badges.map((badge) => (
                   <motion.div
                     key={badge.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="p-5 rounded-xl glass-card"
+                    className={`p-5 rounded-xl ${
+                      badge.earned 
+                        ? 'glass-card' 
+                        : badge.eligible 
+                          ? 'border border-eco-green/30 bg-eco-green/5' 
+                          : 'border border-gray-200 bg-gray-100/50'
+                    }`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-eco-green/10 flex items-center justify-center text-2xl mb-3">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-3 ${
+                      badge.earned 
+                        ? 'bg-eco-green/10 text-eco-green' 
+                        : badge.eligible 
+                          ? 'bg-eco-green/5 text-eco-green/70' 
+                          : 'bg-gray-200 text-gray-400'
+                    }`}>
                       {badge.icon}
                     </div>
-                    <h3 className="text-lg font-medium mb-1">{badge.name}</h3>
-                    <p className="text-sm text-eco-dark/70 mb-3">{badge.description}</p>
-                    <div className="flex items-center text-xs text-eco-green">
-                      <Trophy size={12} className="mr-1" />
-                      <span>Earned {badge.date || 'recently'}</span>
+                    <h3 className={`text-lg font-medium mb-1 ${
+                      !badge.earned && !badge.eligible ? 'text-gray-500' : ''
+                    }`}>
+                      {badge.name}
+                    </h3>
+                    <p className={`text-sm mb-3 ${
+                      badge.earned 
+                        ? 'text-eco-dark/70' 
+                        : badge.eligible 
+                          ? 'text-eco-dark/60' 
+                          : 'text-gray-500'
+                    }`}>
+                      {badge.description}
+                    </p>
+                    <div className="flex items-center text-xs">
+                      {badge.earned ? (
+                        <div className="text-eco-green flex items-center">
+                          <Trophy size={12} className="mr-1" />
+                          <span>Earned {badge.date || 'recently'}</span>
+                        </div>
+                      ) : badge.eligible ? (
+                        <button 
+                          onClick={() => handleClaimBadge(badge.name)}
+                          className="text-white bg-eco-green px-3 py-1 rounded-full text-xs hover:bg-eco-green/90 transition-colors flex items-center"
+                        >
+                          <Trophy size={12} className="mr-1" />
+                          Claim Badge
+                        </button>
+                      ) : (
+                        <div className="text-gray-500">
+                          <span>Ineligible</span>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))
@@ -540,7 +1105,10 @@ const Profile = () => {
               </div>
               
               <div className="divide-y divide-eco-lightGray/50">
-                <div className="px-6 py-4 flex justify-between items-center">
+                <div 
+                  className="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+                  onClick={() => openSettingsModal('profileInfo')}
+                >
                   <div>
                     <h4 className="font-medium">profile information</h4>
                     <p className="text-sm text-eco-dark/70">update your personal details</p>
@@ -548,7 +1116,10 @@ const Profile = () => {
                   <ChevronRight size={20} className="text-eco-dark/40" />
                 </div>
                 
-                <div className="px-6 py-4 flex justify-between items-center">
+                <div 
+                  className="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+                  onClick={() => openSettingsModal('privacySettings')}
+                >
                   <div>
                     <h4 className="font-medium">privacy settings</h4>
                     <p className="text-sm text-eco-dark/70">manage how your data is used</p>
@@ -556,7 +1127,10 @@ const Profile = () => {
                   <ChevronRight size={20} className="text-eco-dark/40" />
                 </div>
                 
-                <div className="px-6 py-4 flex justify-between items-center">
+                <div 
+                  className="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+                  onClick={() => openSettingsModal('emailPreferences')}
+                >
                   <div>
                     <h4 className="font-medium">email preferences</h4>
                     <p className="text-sm text-eco-dark/70">control notifications and updates</p>
@@ -569,8 +1143,11 @@ const Profile = () => {
                     <Bell size={18} className="text-eco-dark/70" />
                     <h4 className="font-medium">notifications</h4>
                   </div>
-                  <div className="w-10 h-6 bg-eco-green rounded-full relative">
-                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                  <div 
+                    className={`w-10 h-6 ${userSettings.notifications ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                    onClick={() => handleToggle('notifications')}
+                  >
+                    <div className={`absolute ${userSettings.notifications ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
                   </div>
                 </div>
                 
@@ -579,8 +1156,11 @@ const Profile = () => {
                     <Globe size={18} className="text-eco-dark/70" />
                     <h4 className="font-medium">location services</h4>
                   </div>
-                  <div className="w-10 h-6 bg-eco-dark/30 rounded-full relative">
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                  <div 
+                    className={`w-10 h-6 ${userSettings.locationServices ? 'bg-eco-green' : 'bg-eco-dark/30'} rounded-full relative cursor-pointer`}
+                    onClick={() => handleToggle('locationServices')}
+                  >
+                    <div className={`absolute ${userSettings.locationServices ? 'right-1' : 'left-1'} top-1 w-4 h-4 bg-white rounded-full transition-all`}></div>
                   </div>
                 </div>
               </div>
@@ -592,33 +1172,45 @@ const Profile = () => {
               </div>
               
               <div className="divide-y divide-eco-lightGray/50">
-                <div className="px-6 py-4 flex justify-between items-center">
+                <a 
+                  href="/faqs" 
+                  className="px-6 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">faqs</h4>
                   </div>
-                  <ExternalLink size={16} className="text-eco-dark/40" />
-                </div>
+                  <ChevronRight size={16} className="text-eco-dark/40" />
+                </a>
                 
-                <div className="px-6 py-4 flex justify-between items-center">
+                <a 
+                  href="/contact-support" 
+                  className="px-6 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">contact support</h4>
                   </div>
-                  <ExternalLink size={16} className="text-eco-dark/40" />
-                </div>
+                  <ChevronRight size={16} className="text-eco-dark/40" />
+                </a>
                 
-                <div className="px-6 py-4 flex justify-between items-center">
+                <a 
+                  href="/privacy-policy" 
+                  className="px-6 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">privacy policy</h4>
                   </div>
-                  <ExternalLink size={16} className="text-eco-dark/40" />
-                </div>
+                  <ChevronRight size={16} className="text-eco-dark/40" />
+                </a>
                 
-                <div className="px-6 py-4 flex justify-between items-center">
+                <a 
+                  href="/terms-of-service" 
+                  className="px-6 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">terms of service</h4>
                   </div>
-                  <ExternalLink size={16} className="text-eco-dark/40" />
-                </div>
+                  <ChevronRight size={16} className="text-eco-dark/40" />
+                </a>
               </div>
             </div>
             
@@ -633,6 +1225,28 @@ const Profile = () => {
                 sign Out
               </motion.button>
             </div>
+            
+            {/* Modals */}
+            <ProfileInfoModal 
+              isOpen={activeModal === 'profileInfo'} 
+              onClose={closeModal} 
+              onSave={updateProfileInfo} 
+              user={user} 
+            />
+            
+            <EmailPreferencesModal 
+              isOpen={activeModal === 'emailPreferences'} 
+              onClose={closeModal} 
+              onSave={saveEmailPreferences} 
+              preferences={userSettings.emailPreferences} 
+            />
+            
+            <PrivacySettingsModal 
+              isOpen={activeModal === 'privacySettings'} 
+              onClose={closeModal} 
+              onSave={savePrivacySettings} 
+              settings={userSettings.privacySettings} 
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.24.1",
     "@google/generative-ai": "^0.24.0",
+    "@googlemaps/google-maps-services-js": "^3.4.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -51,6 +52,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^12.4.10",
+    "google-maps": "^4.3.3",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",

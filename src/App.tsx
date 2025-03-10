@@ -25,6 +25,10 @@ const Receiptify = lazy(() => import("./pages/Receiptify"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Features = lazy(() => import("./pages/Features"));
 const SupabaseTest = lazy(() => import("./components/SupabaseTest"));
+const FAQs = lazy(() => import("./pages/FAQs"));
+const ContactSupport = lazy(() => import("./pages/ContactSupport"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 // Get the publishable key from environment variables
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -200,6 +204,26 @@ const AnimatedRoutes = () => {
         <Route path="/supabase-test" element={
           <Suspense fallback={<PageLoader />}>
             <SupabaseTest />
+          </Suspense>
+        } />
+        <Route path="/faqs" element={
+          <Suspense fallback={<PageLoader />}>
+            <FAQs />
+          </Suspense>
+        } />
+        <Route path="/contact-support" element={
+          <Suspense fallback={<PageLoader />}>
+            <ContactSupport />
+          </Suspense>
+        } />
+        <Route path="/privacy-policy" element={
+          <Suspense fallback={<PageLoader />}>
+            <PrivacyPolicy />
+          </Suspense>
+        } />
+        <Route path="/terms-of-service" element={
+          <Suspense fallback={<PageLoader />}>
+            <TermsOfService />
           </Suspense>
         } />
         <Route path="*" element={

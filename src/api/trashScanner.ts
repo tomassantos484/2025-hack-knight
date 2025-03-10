@@ -6,6 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://2025-hack-kni
 
 console.log('Using API base URL:', API_BASE_URL);
 
+// Flag to enable offline mode if backend is unavailable
+let OFFLINE_MODE = false;
+
 // Define the response type
 export interface TrashScanResult {
   category: 'recycle' | 'compost' | 'landfill' | 'unknown';
@@ -41,6 +44,7 @@ export const testApiConnection = async (): Promise<boolean> => {
     });
     
     console.log('API connection test response:', response.status, response.data);
+    OFFLINE_MODE = false;
     return response.status === 200;
   } catch (error) {
     console.error('Error connecting to API server:', error);
@@ -55,6 +59,12 @@ export const testApiConnection = async (): Promise<boolean> => {
         } : 'No response',
         request: error.request ? 'Request was made but no response received' : 'No request was made'
       });
+      
+      // If we get a 402 Payment Required error, enable offline mode
+      if (error.response && error.response.status === 402) {
+        console.log('Backend hit payment limit, enabling offline mode');
+        OFFLINE_MODE = true;
+      }
     }
     return false;
   }
@@ -67,6 +77,12 @@ export const testApiConnection = async (): Promise<boolean> => {
  */
 export const classifyTrashImage = async (imageBase64: string): Promise<TrashScanResult> => {
   try {
+    // If offline mode is enabled, return a mock result
+    if (OFFLINE_MODE) {
+      console.log('Using offline mode for classification');
+      return generateMockResult();
+    }
+    
     console.log(`Sending image data of length: ${imageBase64.length}`);
     
     // Make sure the image data is in the correct format
@@ -93,6 +109,41 @@ export const classifyTrashImage = async (imageBase64: string): Promise<TrashScan
     return response.data;
   } catch (error) {
     console.error('Error classifying trash image:', error);
+    
+    // If we get a 402 Payment Required error, enable offline mode and return a mock result
+    if (axios.isAxiosError(error) && error.response && error.response.status === 402) {
+      console.log('Backend hit payment limit, enabling offline mode');
+      OFFLINE_MODE = true;
+      return generateMockResult();
+    }
+    
     throw error;
   }
-}; 
+};
+
+/**
+ * Generates a mock classification result for offline mode
+ * @returns A mock classification result
+ */
+function generateMockResult(): TrashScanResult {
+  const categories = ['recycle', 'compost', 'landfill'] as const;
+  const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+  
+  const mockResult: TrashScanResult = {
+    category: randomCategory,
+    confidence: Math.floor(Math.random() * 30) + 70, // 70-99%
+    details: `This item appears to be ${randomCategory === 'recycle' ? 'recyclable' : 
+              randomCategory === 'compost' ? 'compostable' : 'non-recyclable trash'}. 
+              Using offline mode due to backend limitations.`,
+    tips: [
+      "When in doubt, check your local recycling guidelines.",
+      "Clean items before recycling to avoid contamination.",
+      "Consider reducing waste by using reusable alternatives."
+    ],
+    environmental_impact: "Using offline mode - environmental impact data not available.",
+    buds_reward: 5,
+    offline_mode: true
+  };
+  
+  return mockResult;
+} 

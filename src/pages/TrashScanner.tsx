@@ -1,8 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
-import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf } from 'lucide-react';
+import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf, Clock, ChevronRight } from 'lucide-react';
 import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trashScanner';
+import { useAuth } from '@clerk/clerk-react';
+import { formatDistanceToNow } from 'date-fns';
+
+// Interface for scan history item
+interface ScanHistoryItem {
+  id: string;
+  timestamp: Date;
+  imagePreview: string;
+  result: TrashScanResult;
+}
 
 interface ScanResult {
   category: 'recycle' | 'compost' | 'landfill' | 'unknown';
@@ -15,6 +25,7 @@ interface ScanResult {
 }
 
 const TrashScanner = () => {
+  const { isSignedIn } = useAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -23,6 +34,31 @@ const TrashScanner = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Scan history state
+  const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  
+  // Load scan history from localStorage on component mount
+  useEffect(() => {
+    const loadScanHistory = () => {
+      const savedHistory = localStorage.getItem('trashScanHistory');
+      if (savedHistory) {
+        try {
+          // Parse the saved history and convert timestamp strings back to Date objects
+          const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+            ...item,
+            timestamp: new Date(item.timestamp)
+          }));
+          setScanHistory(parsedHistory);
+        } catch (err) {
+          console.error('Error loading scan history:', err);
+        }
+      }
+    };
+    
+    loadScanHistory();
+  }, []);
   
   // Check if API is available
   useEffect(() => {
@@ -109,10 +145,16 @@ const TrashScanner = () => {
         };
         
         setScanResult(mockResult);
+        
+        // Save to scan history
+        saveToHistory(mockResult);
       } else {
         // Use the actual API
         const result = await classifyTrashImage(imagePreview);
         setScanResult(result);
+        
+        // Save to scan history
+        saveToHistory(result);
       }
     } catch (err) {
       console.error('Error scanning image:', err);
@@ -122,9 +164,34 @@ const TrashScanner = () => {
     }
   };
   
+  // Save scan result to history
+  const saveToHistory = (result: ScanResult) => {
+    if (!imagePreview) return;
+    
+    // Create a new history item
+    const newHistoryItem: ScanHistoryItem = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      imagePreview: imagePreview,
+      result: result as TrashScanResult
+    };
+    
+    // Update history state
+    const updatedHistory = [newHistoryItem, ...scanHistory].slice(0, 10); // Keep only the 10 most recent scans
+    setScanHistory(updatedHistory);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('trashScanHistory', JSON.stringify(updatedHistory));
+    } catch (err) {
+      console.error('Error saving scan history to localStorage:', err);
+    }
+  };
+  
   const handleReset = () => {
     setImagePreview(null);
     setScanResult(null);
+    setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -176,6 +243,68 @@ const TrashScanner = () => {
     }
   };
 
+  // Render scan history item
+  const renderHistoryItem = (item: ScanHistoryItem) => {
+    return (
+      <motion.div 
+        key={item.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-lg shadow-md overflow-hidden mb-3 border border-gray-100"
+      >
+        <div className="flex items-center p-3">
+          <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 mr-3">
+            <img 
+              src={item.imagePreview} 
+              alt="Scanned item" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="flex-grow">
+            <div className="flex items-center">
+              <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                item.result.category === 'recycle' ? 'bg-blue-500' : 
+                item.result.category === 'compost' ? 'bg-green-500' : 
+                'bg-amber-500'
+              }`}></span>
+              <h4 className="font-medium capitalize">{item.result.category}</h4>
+              {item.result.offline_mode && (
+                <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                  Offline
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+            </p>
+          </div>
+          
+          <div className="flex-shrink-0">
+            <button 
+              onClick={() => viewHistoryItem(item)}
+              className="text-eco-green hover:text-eco-green-dark"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+  
+  // View a history item
+  const viewHistoryItem = (item: ScanHistoryItem) => {
+    setImagePreview(item.imagePreview);
+    setScanResult(item.result);
+    setShowHistory(false);
+  };
+
+  const clearHistory = () => {
+    setScanHistory([]);
+    localStorage.removeItem('trashScanHistory');
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
@@ -207,14 +336,71 @@ const TrashScanner = () => {
           </p>
           {apiError && <p className="text-sm text-red-500">{apiError}</p>}
           
-          {/* Add a direct test button */}
-          <button 
-            onClick={testApiDirectly}
-            className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-          >
-            Test API Directly
-          </button>
+          {!apiConnected && (
+            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> The backend API is currently unavailable or has reached its usage limit. 
+                The trash scanner is operating in offline mode, providing simulated results.
+              </p>
+            </div>
+          )}
+          
+          <div className="flex items-center mt-3 space-x-2">
+            {/* Add a direct test button */}
+            <button 
+              onClick={testApiDirectly}
+              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+            >
+              Test API Directly
+            </button>
+            
+            {/* History toggle button */}
+            <button 
+              onClick={() => setShowHistory(!showHistory)}
+              className={`px-3 py-1 text-sm rounded flex items-center ${
+                showHistory ? 'bg-eco-green text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Clock size={16} className="mr-1" />
+              {showHistory ? 'Hide History' : 'View History'}
+            </button>
+          </div>
         </div>
+        
+        {/* Scan History Panel */}
+        <AnimatePresence>
+          {showHistory && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium text-lg">Recent Scans</h3>
+                  
+                  {scanHistory.length > 0 && (
+                    <button 
+                      onClick={clearHistory}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Clear History
+                    </button>
+                  )}
+                </div>
+                
+                {scanHistory.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No scan history yet. Start scanning items to build your history.</p>
+                ) : (
+                  <div className="max-h-80 overflow-y-auto pr-2">
+                    {scanHistory.map(item => renderHistoryItem(item))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left side - Upload/Preview section */}
@@ -328,15 +514,18 @@ const TrashScanner = () => {
                   transition={{ type: 'spring', damping: 25 }}
                   className={`rounded-xl p-6 border ${getCategoryColor(scanResult.category)}`}
                 >
-                  <div className="flex items-center mb-4">
-                    <div className={`p-2 rounded-full mr-3 ${scanResult.category === 'recycle' ? 'bg-blue-500/20' : scanResult.category === 'compost' ? 'bg-eco-green/20' : 'bg-eco-accent/20'}`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center">
                       {getCategoryIcon(scanResult.category)}
+                      <h3 className="text-xl font-bold ml-2 capitalize">{scanResult.category}</h3>
                     </div>
-                    <div>
-                      <h3 className="font-medium capitalize">{scanResult.category}</h3>
-                      <div className="text-xs text-eco-dark/70">
-                        confidence: {scanResult.confidence}%
-                      </div>
+                    <div className="text-sm font-medium">
+                      Confidence: {scanResult.confidence}%
+                      {scanResult.offline_mode && (
+                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                          Offline Mode
+                        </span>
+                      )}
                     </div>
                   </div>
                   

@@ -80,9 +80,10 @@ export const getBudsBalance = async (userId: string): Promise<number> => {
     if (!statsError && (statsData === null || statsData.buds_earned !== balance)) {
       try {
         // Use the RPC function to ensure consistency
-        const { error } = await supabase.rpc('fix_user_buds_balance', {
+        const { error } = await supabase.rpc('update_buds_balance', {
           p_user_id: formattedUserId,
-          p_correct_balance: balance
+          p_amount: balance,
+          p_is_earning: true
         });
         
         if (error) {
