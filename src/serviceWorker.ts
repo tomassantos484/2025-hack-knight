@@ -1,5 +1,3 @@
-import { handleApiRequest } from './api';
-
 // Define the FetchEvent interface
 interface FetchEvent extends Event {
   request: Request;
@@ -89,8 +87,14 @@ self.addEventListener('fetch', (event: FetchEvent) => {
                 return cachedResponse;
               }
               
-              // If not in cache, use the service worker API handler
-              return handleApiRequest(event.request);
+              // If not in cache, return a simple offline response
+              return new Response(JSON.stringify({ 
+                error: 'You are offline',
+                offline_mode: true 
+              }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              });
             });
         })
     );

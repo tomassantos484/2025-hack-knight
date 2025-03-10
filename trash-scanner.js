@@ -5,6 +5,7 @@
 
 // Configuration
 const API_BASE_URL = 'https://ecovision-backend-production.up.railway.app'; // Railway deployment URL
+console.log('Trash Scanner using API URL:', API_BASE_URL);
 
 // Category configuration
 const categoryConfig = {
@@ -142,10 +143,12 @@ function initTrashScanner(options) {
         resultContainer.style.display = 'none';
         
         try {
+            console.log(`Sending request to: ${API_BASE_URL}/api/classify-trash`);
             const response = await fetch(`${API_BASE_URL}/api/classify-trash`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
                     image: imagePreview.src

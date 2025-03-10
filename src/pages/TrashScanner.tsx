@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf, Clock, ChevronRight } from 'lucide-react';
-import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trashScanner';
+import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trash-scanner';
 import { useAuth } from '@clerk/clerk-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -63,7 +63,12 @@ const TrashScanner = () => {
       if (savedHistory) {
         try {
           // Parse the saved history and convert timestamp strings back to Date objects
-          const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+          const parsedHistory = JSON.parse(savedHistory).map((item: {
+            id: string;
+            timestamp: string;
+            imagePreview: string;
+            result: TrashScanResult;
+          }) => ({
             ...item,
             timestamp: new Date(item.timestamp)
           }));
