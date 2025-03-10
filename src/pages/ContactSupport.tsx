@@ -5,6 +5,7 @@ import { Send, Mail, MessageSquare, AlertCircle } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 
+//
 // Support request categories
 const categories = [
   'Account Issues',
