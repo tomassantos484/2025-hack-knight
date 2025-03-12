@@ -1,4 +1,4 @@
-import { supabase } from '../services/supabaseClient';
+import { supabase } from './supabaseService';
 import { EcoAction, UserAction } from '@/types/database';
 import { v4 as uuidv4 } from 'uuid';
 import { analyzeEcoAction } from './geminiService';

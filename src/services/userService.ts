@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseService';
 import { formatUuid } from './receiptProcessingService';
 
 /**

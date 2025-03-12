@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseService';
 import { formatUuid } from './ecoActionsService';
 import { toast } from 'sonner';
 import { earnBuds } from './walletService';
