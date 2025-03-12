@@ -56,6 +56,7 @@ try {
         maybeSingle: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } })
       }),
       insert: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
+      upsert: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
       update: () => ({
         eq: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } })
       }),
@@ -66,7 +67,7 @@ try {
   };
 }
 
-// Create a wrapper around the Supabase client to ensure maybeSingle is always available
+// Create a wrapper around the Supabase client to ensure all methods are available
 const supabase = {
   ...supabaseOriginal,
   from: (table: string) => {
@@ -74,6 +75,8 @@ const supabase = {
     
     return {
       ...originalFrom,
+      
+      // Ensure select and its methods are available
       select: (columns: string = '*') => {
         const originalSelect = originalFrom.select(columns);
         
@@ -148,6 +151,101 @@ const supabase = {
         });
         
         return selectWrapper;
+      },
+      
+      // Ensure insert is available
+      insert: (data, options) => {
+        if (typeof originalFrom.insert === 'function') {
+          return originalFrom.insert(data, options);
+        }
+        
+        console.warn('Using fallback implementation of insert');
+        return {
+          select: (columns) => ({
+            data: null,
+            error: { message: 'insert.select is not implemented in fallback' }
+          })
+        };
+      },
+      
+      // Ensure upsert is available
+      upsert: (data, options) => {
+        if (typeof originalFrom.upsert === 'function') {
+          return originalFrom.upsert(data, options);
+        }
+        
+        console.warn('Using fallback implementation of upsert');
+        // Try to use insert with onConflict option if available
+        if (typeof originalFrom.insert === 'function') {
+          return originalFrom.insert(data, { ...options, onConflict: options?.onConflict || 'id' });
+        }
+        
+        return {
+          data: null,
+          error: { message: 'upsert is not implemented in fallback' }
+        };
+      },
+      
+      // Ensure update is available
+      update: (data, options) => {
+        if (typeof originalFrom.update === 'function') {
+          const updateResult = originalFrom.update(data, options);
+          
+          // Add eq method if it doesn't exist
+          if (updateResult && typeof updateResult.eq !== 'function') {
+            return {
+              ...updateResult,
+              eq: (column, value) => {
+                console.warn('Using fallback implementation of update.eq');
+                return {
+                  data: null,
+                  error: { message: 'update.eq is not implemented in fallback' }
+                };
+              }
+            };
+          }
+          
+          return updateResult;
+        }
+        
+        console.warn('Using fallback implementation of update');
+        return {
+          eq: (column, value) => ({
+            data: null,
+            error: { message: 'update is not implemented in fallback' }
+          })
+        };
+      },
+      
+      // Ensure delete is available
+      delete: (options) => {
+        if (typeof originalFrom.delete === 'function') {
+          const deleteResult = originalFrom.delete(options);
+          
+          // Add eq method if it doesn't exist
+          if (deleteResult && typeof deleteResult.eq !== 'function') {
+            return {
+              ...deleteResult,
+              eq: (column, value) => {
+                console.warn('Using fallback implementation of delete.eq');
+                return {
+                  data: null,
+                  error: { message: 'delete.eq is not implemented in fallback' }
+                };
+              }
+            };
+          }
+          
+          return deleteResult;
+        }
+        
+        console.warn('Using fallback implementation of delete');
+        return {
+          eq: (column, value) => ({
+            data: null,
+            error: { message: 'delete is not implemented in fallback' }
+          })
+        };
       }
     };
   }
