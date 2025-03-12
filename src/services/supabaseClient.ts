@@ -35,13 +35,13 @@ if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.e
 // Create a client for TypeScript type support
 // In production, this will only be used for type support, not actual API calls
 // We wrap this in a try-catch to prevent errors if the credentials are invalid
-let supabase;
+let supabaseOriginal;
 try {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  supabaseOriginal = createClient(supabaseUrl, supabaseKey);
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
   // Create a mock client that won't throw errors
-  supabase = {
+  supabaseOriginal = {
     from: () => ({
       select: () => ({
         eq: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
@@ -65,6 +65,93 @@ try {
     })
   };
 }
+
+// Create a wrapper around the Supabase client to ensure maybeSingle is always available
+const supabase = {
+  ...supabaseOriginal,
+  from: (table: string) => {
+    const originalFrom = supabaseOriginal.from(table);
+    
+    return {
+      ...originalFrom,
+      select: (columns: string = '*') => {
+        const originalSelect = originalFrom.select(columns);
+        
+        // Create a wrapper around the select result to ensure maybeSingle is available
+        const selectWrapper = {
+          ...originalSelect,
+          
+          // Ensure maybeSingle is always available
+          maybeSingle: async () => {
+            // If the original has maybeSingle, use it
+            if (typeof originalSelect.maybeSingle === 'function') {
+              return originalSelect.maybeSingle();
+            }
+            
+            // Otherwise, implement it using limit and single
+            console.warn('Using fallback implementation of maybeSingle');
+            try {
+              const result = await originalSelect.limit(1).single();
+              return result;
+            } catch (error) {
+              // If single throws because no rows were found, return null data
+              if (error.message && error.message.includes('No rows found')) {
+                return { data: null, error: null };
+              }
+              // Otherwise, propagate the error
+              throw error;
+            }
+          }
+        };
+        
+        // Add methods that return the wrapper
+        const methodsToWrap = ['eq', 'neq', 'in', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'not'];
+        methodsToWrap.forEach(method => {
+          if (typeof originalSelect[method] === 'function') {
+            selectWrapper[method] = (...args) => {
+              const result = originalSelect[method](...args);
+              // Add maybeSingle to the result if it doesn't have it
+              if (result && typeof result.maybeSingle !== 'function') {
+                result.maybeSingle = selectWrapper.maybeSingle;
+              }
+              return result;
+            };
+          }
+        });
+        
+        // Add methods that return a new wrapper
+        const chainableMethods = ['limit', 'order', 'range'];
+        chainableMethods.forEach(method => {
+          if (typeof originalSelect[method] === 'function') {
+            selectWrapper[method] = (...args) => {
+              const result = originalSelect[method](...args);
+              // Create a new wrapper with the result
+              return {
+                ...result,
+                maybeSingle: selectWrapper.maybeSingle,
+                // Recursively wrap methods that return a new builder
+                ...methodsToWrap.reduce((acc, m) => {
+                  if (typeof result[m] === 'function') {
+                    acc[m] = (...mArgs) => {
+                      const mResult = result[m](...mArgs);
+                      if (mResult && typeof mResult.maybeSingle !== 'function') {
+                        mResult.maybeSingle = selectWrapper.maybeSingle;
+                      }
+                      return mResult;
+                    };
+                  }
+                  return acc;
+                }, {})
+              };
+            };
+          }
+        });
+        
+        return selectWrapper;
+      }
+    };
+  }
+};
 
 // Export the client
 export { supabase };
