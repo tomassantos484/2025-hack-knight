@@ -20,7 +20,7 @@ app = Flask(__name__)
 ALLOWED_ORIGINS = [
     'http://localhost:8080',
     'http://localhost:3000',
-    'https://2025-hack-knight.vercel.app/',
+    'https://2025-hack-knight.vercel.app',
     'https://ecovision-backend-production.up.railway.app'
 ]
 

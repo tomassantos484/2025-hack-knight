@@ -196,5 +196,6 @@ karma.conf.js.snap
 run-tests.js
 
 test_api.html
-
 trash-scanner-component.html
+
+deploy.sh

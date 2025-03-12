@@ -18,16 +18,18 @@ type SelectQueryBuilder = {
 };
 
 // Get Supabase credentials from environment variables with fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY || 'placeholder-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY || '';
 
 // Log warning if environment variables are missing (but not in production)
 if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_API_KEY)) {
   console.warn(
     'Supabase credentials missing in environment variables. ' +
-    'Using placeholder values for type support only. ' +
     'API calls will be routed through the backend API.'
   );
+} else if (import.meta.env.PROD) {
+  // Only log that initialization happened, not the actual URL
+  console.log('Supabase client initialized');
 }
 
 // Create a client for TypeScript type support
