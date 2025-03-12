@@ -18,6 +18,11 @@ if (import.meta.env.DEV) {
   console.log(`API initialized with base URL: ${API_BASE_URL}`);
 }
 
+// Ensure we're not using the old Vercel backend
+if (API_BASE_URL.includes('vercel.app')) {
+  console.error('Error: Still using Vercel backend URL. Please update your environment variables.');
+}
+
 // Export other API-related configuration as needed
 export const API_ENDPOINTS = {
   TEST: `${API_BASE_URL}/api/test`,

@@ -8,28 +8,53 @@ export function register() {
     window.addEventListener('load', () => {
       const swUrl = '/serviceWorker.js';
       
-      navigator.serviceWorker.register(swUrl)
-        .then(registration => {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        })
-        .catch(error => {
-          console.error('ServiceWorker registration failed: ', error);
+      // First, try to unregister any existing service workers
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          registration.unregister();
         });
+      }).then(() => {
+        // Clear all caches
+        caches.keys().then(cacheNames => {
+          return Promise.all(
+            cacheNames.map(cacheName => {
+              return caches.delete(cacheName);
+            })
+          );
+        }).then(() => {
+          // Register the new service worker
+          navigator.serviceWorker.register(swUrl)
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.error('ServiceWorker registration failed: ', error);
+            });
+        });
+      });
     });
   }
 }
 
 /**
- * Unregister the service worker
+ * Unregister the service worker and clear caches
  */
 export function unregister() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then(registration => {
+    // Unregister all service workers
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => {
         registration.unregister();
-      })
-      .catch(error => {
-        console.error(error.message);
       });
+    });
+
+    // Clear all caches
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          return caches.delete(cacheName);
+        })
+      );
+    });
   }
 } 
