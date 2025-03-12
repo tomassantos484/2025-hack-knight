@@ -1,4 +1,5 @@
-import secureClient, { supabase } from './supabaseClient';
+import { supabase as directClient } from './supabaseClient';
+import secureClient from './supabaseClient';
 
 /**
  * Get an authenticated Supabase client using the Clerk session token
@@ -42,9 +43,10 @@ export const getDevBypassClient = () => {
   // Log a warning, but only in development mode
   console.warn('Using development bypass client - NEVER use this in production!');
   
-  // For development, we'll use the secure client with special headers
-  return secureClient;
+  // For development, we'll use the direct client with special headers
+  return directClient;
 };
 
-// Re-export the secure client as the default
-export { secureClient as supabase }; 
+// Export both clients for different use cases
+export { directClient as supabase }; // Export the direct client as supabase
+export { secureClient }; // Export the secure client separately 
