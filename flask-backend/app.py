@@ -22,7 +22,9 @@ ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:8081',
     'https://2025-hack-knight.vercel.app',
-    'https://ecovision-backend-production.up.railway.app'
+    'https://ecovision-backend-production.up.railway.app',
+    'https://2025-hack-knight-git-main-tomas-santos-ycianos-projects.vercel.app',
+    'https://2025-hack-knight.vercel.app'
 ]
 
 # Get allowed origins from environment variable if available
@@ -276,15 +278,29 @@ def handle_preflight():
     # Check if the origin is allowed
     if origin and origin in ALLOWED_ORIGINS:
         response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '3600')  # Cache preflight for 1 hour
     else:
         # For development/testing, log the disallowed origin
         if origin:
-            logger.warning(f"Preflight request from disallowed origin: {origin}")
+            logger.warning(f"Preflight request from unauthorized origin: {origin}")
+            # For development, we'll allow any vercel.app domain
+            if '.vercel.app' in origin:
+                logger.info(f"Allowing Vercel preview domain: {origin}")
+                response.headers.add('Access-Control-Allow-Origin', origin)
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+                response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+                response.headers.add('Access-Control-Max-Age', '3600')
+                
+                # Add this origin to our allowed list for future requests
+                ALLOWED_ORIGINS.append(origin)
+                logger.info(f"Added {origin} to allowed origins list")
         else:
             logger.warning("Preflight request without origin header")
     
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
     return response
 
 def generate_mock_result():
