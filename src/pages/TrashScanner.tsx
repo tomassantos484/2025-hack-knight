@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Upload, Camera, Image, AlertCircle, CheckCircle, Recycle, Trash2, Loader2, Leaf, Clock, ChevronRight } from 'lucide-react';
 import { classifyTrashImage, testApiConnection, TrashScanResult } from '../api/trash-scanner';
 import { useAuth } from '@clerk/clerk-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '../api/api-config';
 
 // Interface for scan history item
 interface ScanHistoryItem {
@@ -283,7 +284,7 @@ const TrashScanner = () => {
   // Add a function to test the API directly
   const testApiDirectly = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
+      const apiUrl = API_BASE_URL;
       console.log('Testing API connection...');
       
       const response = await fetch(`${apiUrl}/api/test?t=${new Date().getTime()}`);

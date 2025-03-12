@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useLayoutEffect } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
@@ -10,14 +10,9 @@ interface AuthLayoutProps {
 const AuthLayout = ({ children }: AuthLayoutProps) => {
   const location = useLocation();
   
-  // Use useLayoutEffect to ensure scroll position is set before browser paint
-  useLayoutEffect(() => {
-    // Force scroll to top immediately
+  // Use useEffect for scrolling to top when route changes
+  useEffect(() => {
     window.scrollTo(0, 0);
-    
-    // Also set body scroll position
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
   }, [location.pathname]);
   
   return (

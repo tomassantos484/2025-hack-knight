@@ -8,7 +8,7 @@ import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, lazy, Suspense } from "react";
 import ErrorBoundary from './components/ErrorBoundary';
-import { testDatabaseConnection } from './services/receiptProcessingService';
+// import { testDatabaseConnection } from './services/receiptProcessingService';
 import { syncUserWithSupabase, ClerkUser as ClerkUserType } from './services/userService';
 
 // Dynamically import page components
@@ -239,14 +239,33 @@ const AnimatedRoutes = () => {
 const queryClient = new QueryClient();
 
 const App = () => {
+  // Database connection testing has been disabled to prevent console warnings
+  // Uncomment the following code if you need to test the database connection during development
+  /*
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // Use a flag in localStorage to only run this once per session
+      const hasTestedDb = localStorage.getItem('hasTestedDbConnection');
+      if (!hasTestedDb) {
+        console.log('Testing database connection (development only)...');
+        testDatabaseConnection()
+          .then(() => {
+            localStorage.setItem('hasTestedDbConnection', 'true');
+          })
+          .catch(error => {
+            console.error('Database connection test failed:', error);
+          });
+      }
+    }
+  }, []);
+  */
+
+  // Check for Clerk publishable key
   if (!clerkPubKey) {
     return <div className="flex items-center justify-center min-h-screen">
       Missing Clerk Publishable Key. Please add it to your .env file.
     </div>;
   }
-
-  // Call the test function to verify database connection
-  testDatabaseConnection();
 
   return (
     <ErrorBoundary>

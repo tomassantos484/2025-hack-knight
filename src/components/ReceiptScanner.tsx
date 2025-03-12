@@ -1,82 +1,88 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { scanReceipt } from '../api/receipt-scanner';
 
 const ReceiptScanner = () => {
-  const [receipt, setReceipt] = useState(null);
+  const [receipt, setReceipt] = useState<File | null>(null);
   const [textData, setTextData] = useState('');
-  const [ecoScore, setEcoScore] = useState(null);
-  const [carbonFootprint, setCarbonFootprint] = useState(null);
+  const [ecoScore, setEcoScore] = useState<number | null>(null);
+  const [carbonFootprint, setCarbonFootprint] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (event) => {
-    setReceipt(event.target.files[0]);
-  };
-
-  const handleUpload = async () => {
-    if (!receipt) return;
-
-    const formData = new FormData();
-    formData.append('file', receipt);
-
-    try {
-      const response = await axios.post('https://api.gemini.com/v1/receipt', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`
-        }
-      });
-      const items = response.data.items;
-      analyzeItems(items);
-    } catch (error) {
-      console.error('Error uploading receipt:', error);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setReceipt(event.target.files[0]);
+      setError(null); // Clear any previous errors
     }
   };
 
-  const analyzeItems = (items) => {
-    let ecoFriendlyCount = 0;
-    let nonEcoCount = 0;
+  const handleUpload = async () => {
+    if (!receipt) {
+      setError('Please select a receipt image first');
+      return;
+    }
 
-    items.forEach(item => {
-      if (isEcoFriendly(item)) {
-        ecoFriendlyCount++;
-      } else {
-        nonEcoCount++;
-      }
-    });
+    setIsLoading(true);
+    setError(null);
 
-    const score = (ecoFriendlyCount / items.length) * 100;
-    setEcoScore(score);
-    calculateCarbonFootprint(items);
-  };
-
-  const isEcoFriendly = (item) => {
-    // Placeholder logic for determining if an item is eco-friendly
-    return item.toLowerCase().includes('organic') || item.toLowerCase().includes('reusable');
-  };
-
-  const calculateCarbonFootprint = async (items) => {
     try {
-      const response = await axios.post('https://beta3.api.climatiq.io/estimate', {
-        items: items.map(item => ({
-          name: item,
-          quantity: 1
-        }))
-      }, {
-        headers: {
-          'Authorization': `Bearer ${process.env.CLIMATIQ_API_KEY}`
-        }
-      });
-      setCarbonFootprint(response.data.total_carbon);
+      // Use the new API endpoint instead of directly calling Gemini API
+      const result = await scanReceipt(receipt);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process receipt');
+      }
+      
+      const receiptData = result.data;
+      
+      // Set the extracted data
+      if (receiptData.extracted_text) {
+        setTextData(receiptData.extracted_text);
+      }
+      
+      // Set eco score and carbon footprint
+      if (receiptData.eco_score !== undefined) {
+        setEcoScore(receiptData.eco_score);
+      }
+      
+      if (receiptData.carbon_footprint !== undefined) {
+        setCarbonFootprint(receiptData.carbon_footprint);
+      }
     } catch (error) {
-      console.error('Error calculating carbon footprint:', error);
+      console.error('Error processing receipt:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="receipt-scanner">
       <input type="file" accept="image/*" onChange={handleFileChange} />
-      <button onClick={handleUpload}>upload receipt</button>
-      {ecoScore !== null && <div className="eco-score">eco receipt score: {ecoScore}%</div>}
-      {carbonFootprint !== null && <div className="carbon-footprint">carbon footprint: {carbonFootprint} kg CO2</div>}
+      <button 
+        onClick={handleUpload} 
+        disabled={isLoading || !receipt}
+        className={isLoading ? 'loading' : ''}
+      >
+        {isLoading ? 'processing...' : 'upload receipt'}
+      </button>
+      
+      {error && <div className="error-message">{error}</div>}
+      
+      {textData && (
+        <div className="extracted-text">
+          <h3>Extracted Text:</h3>
+          <pre>{textData}</pre>
+        </div>
+      )}
+      
+      {ecoScore !== null && (
+        <div className="eco-score">eco receipt score: {ecoScore}%</div>
+      )}
+      
+      {carbonFootprint !== null && (
+        <div className="carbon-footprint">carbon footprint: {carbonFootprint} kg CO2</div>
+      )}
     </div>
   );
 };

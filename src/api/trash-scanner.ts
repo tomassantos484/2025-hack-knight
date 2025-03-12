@@ -1,8 +1,5 @@
 import axios from 'axios';
-
-// Define the base URL for the API
-// Use environment variable if available, otherwise use the Railway URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ecovision-backend-production.up.railway.app';
+import { API_BASE_URL } from './api-config';
 
 // Log basic information about the API URL
 console.log('Using API base URL for trash scanner');
@@ -19,6 +16,54 @@ export interface TrashScanResult {
   environmental_impact?: string;
   buds_reward: number;
   offline_mode?: boolean;
+}
+
+/**
+ * Validates if a string is a valid base64 encoded string
+ * @param str - The string to validate
+ * @returns True if the string is valid base64, false otherwise
+ */
+function isValidBase64(str: string): boolean {
+  if (!str || str.length === 0) return false;
+  
+  try {
+    // Check if the string has valid base64 characters
+    // Base64 uses A-Z, a-z, 0-9, +, /, and = for padding
+    const base64Regex = /^[A-Za-z0-9+/=]+$/;
+    
+    // Remove any whitespace before testing
+    const trimmed = str.replace(/\s/g, '');
+    
+    if (!base64Regex.test(trimmed)) {
+      return false;
+    }
+    
+    // Try to decode a small portion to verify it's valid
+    atob(trimmed.substring(0, Math.min(100, trimmed.length)));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Formats an image string to ensure it has the proper data URI prefix
+ * @param imageData - The image data string (may or may not already have a data URI prefix)
+ * @returns Properly formatted image data string with data URI prefix
+ */
+function formatImageData(imageData: string): string {
+  // If it already has a data URI prefix, return as is
+  if (imageData.startsWith('data:')) {
+    return imageData;
+  }
+  
+  // Validate that it's a valid base64 string
+  if (!isValidBase64(imageData)) {
+    throw new Error('Invalid image data: not a valid base64 string');
+  }
+  
+  // Add the appropriate data URI prefix for JPEG images
+  return `data:image/jpeg;base64,${imageData}`;
 }
 
 /**
@@ -75,11 +120,15 @@ export const classifyTrashImage = async (imageBase64: string): Promise<TrashScan
     
     console.log(`Sending image data of length: ${imageBase64.length}`);
     
-    // Make sure the image data is in the correct format
-    // If it doesn't start with 'data:', add the prefix
-    const formattedImageData = imageBase64.startsWith('data:') 
-      ? imageBase64 
-      : `data:image/jpeg;base64,${imageBase64}`;
+    // Format the image data to ensure it has the proper data URI prefix
+    let formattedImageData: string;
+    try {
+      formattedImageData = formatImageData(imageBase64);
+    } catch (error) {
+      console.error('Error formatting image data:', error);
+      OFFLINE_MODE = true;
+      return generateMockResult();
+    }
     
     console.log('Sending request to:', `${API_BASE_URL}/api/classify-trash`);
     

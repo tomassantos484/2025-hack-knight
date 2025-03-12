@@ -5,6 +5,8 @@ import { CheckCircle, Leaf, Zap, PiggyBank, Recycle, Award, BarChart3, Users } f
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useState } from 'react';
+import { scanReceipt } from '../api/receipt-scanner';
+import { calculateCarbonFootprint as calculateItemsFootprint } from '../api/carbon-footprint';
 
 const Features = () => {
   const features = [
@@ -73,6 +75,8 @@ const Features = () => {
   const [receipt, setReceipt] = useState(null);
   const [ecoScore, setEcoScore] = useState(null);
   const [carbonFootprint, setCarbonFootprint] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleFileChange = (event) => {
     setReceipt(event.target.files[0]);
@@ -81,21 +85,46 @@ const Features = () => {
   const handleUpload = async () => {
     if (!receipt) return;
 
-    const formData = new FormData();
-    formData.append('file', receipt);
-
+    setIsLoading(true);
+    
     try {
-      const response = await axios.post('https://api.gemini.com/v1/receipt', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`
-        }
-      });
-      console.log('Gemini API Response:', response.data);
-      const items = response.data.items; // Ensure this is the correct path to items
-      analyzeItems(items);
+      // Use the new API endpoint instead of directly calling Gemini API
+      const result = await scanReceipt(receipt);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process receipt');
+      }
+      
+      console.log('Receipt Analysis:', result.data);
+      
+      // Extract items from the receipt data if available
+      // Since the API might return different formats, we need to handle both cases
+      const receiptData = result.data;
+      
+      // If we have eco_score and carbon_footprint directly, use them
+      if (receiptData.eco_score !== undefined) {
+        setEcoScore(receiptData.eco_score);
+      }
+      
+      if (receiptData.carbon_footprint !== undefined) {
+        setCarbonFootprint(receiptData.carbon_footprint);
+      }
+      
+      // If we need to analyze items separately, we can extract them from the extracted text
+      // or use a different approach based on the actual data structure
+      if (receiptData.extracted_text) {
+        // For now, we'll just log the extracted text
+        console.log('Extracted text:', receiptData.extracted_text);
+        
+        // You could implement a function to parse items from the text if needed
+        // const parsedItems = parseItemsFromText(receiptData.extracted_text);
+        // analyzeItems(parsedItems);
+      }
     } catch (error) {
-      console.error('Error uploading receipt:', error);
+      console.error('Error processing receipt:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,19 +149,24 @@ const Features = () => {
 
   const calculateCarbonFootprint = async (items) => {
     try {
-      const response = await axios.post('https://beta3.api.climatiq.io/estimate', {
-        items: items.map(item => ({
-          name: item,
-          quantity: 1
-        }))
-      }, {
-        headers: {
-          'Authorization': `Bearer ${process.env.CLIMATIQ_API_KEY}`
-        }
-      });
-      setCarbonFootprint(response.data.total_carbon);
+      // Use the new API endpoint instead of directly calling Climatiq API
+      const result = await calculateItemsFootprint(items);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to calculate carbon footprint');
+      }
+      
+      // Set the carbon footprint from the API response
+      setCarbonFootprint(result.data.totalCarbon);
+      
+      // If this is an estimate, we could show a notification to the user
+      if (result.data.isEstimate) {
+        console.log('Note: Carbon footprint is an estimate due to API limitations');
+      }
     } catch (error) {
-      console.error('error calculating carbon footprint:', error);
+      console.error('Error calculating carbon footprint:', error);
+      // Set a default value or show an error message
+      setCarbonFootprint(null);
     }
   };
 

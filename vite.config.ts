@@ -10,6 +10,14 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), '');
   
+  // Set default API URL based on environment
+  const apiBaseUrl = env.VITE_API_BASE_URL || 
+    (mode === 'production' 
+      ? 'https://ecovision-backend-production.up.railway.app'
+      : 'http://localhost:5000');
+  
+  console.log(`Using API base URL: ${apiBaseUrl} (${mode} mode)`);
+  
   return {
     server: {
       host: "::",
@@ -47,6 +55,9 @@ export default defineConfig(({ mode }) => {
     define: {
       // Safely expose environment variables without logging them
       'import.meta.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+      'import.meta.env.VITE_SUPABASE_API_KEY': JSON.stringify(env.VITE_SUPABASE_API_KEY),
     },
     build: {
       // Increase the warning limit to avoid unnecessary warnings

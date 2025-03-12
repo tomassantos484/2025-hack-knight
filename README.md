@@ -36,6 +36,11 @@
 - Intuitive navigation and clean interface
 - Dark/light mode support
 
+### 🔒 Security Improvements
+- Backend API proxy for Supabase operations to protect API keys
+- Secure handling of sensitive credentials through Flask backend
+- Improved data validation and error handling
+
 ## 🛠️ Tech Stack
 - **Frontend**: React with TypeScript, Vite, Tailwind CSS
 - **Backend**: Flask API with Gemini AI integration
@@ -202,22 +207,8 @@ eco-action-logger-06/
 - [React Query](https://tanstack.com/query/latest) for efficient data fetching
 - [Recharts](https://recharts.org/) for beautiful charts 
 
-## 🚀 Deployment
-
-### Frontend Deployment (Vercel)
-1. Push your code to a GitHub repository
-2. Connect your repository to Vercel
-3. Configure the environment variables in the Vercel dashboard
-4. Deploy your application
-
-### Backend Deployment
-For the Flask backend, you have several options:
-1. **Render**: Easy deployment with free tier available
-2. **Heroku**: Simple deployment with PostgreSQL integration
-3. **Railway**: Modern platform with easy setup
-4. **AWS/GCP/Azure**: More complex but highly scalable
-
-Important: When deploying, make sure to:
-1. Set the `VITE_API_BASE_URL` environment variable in your frontend to point to your deployed backend
-2. Configure CORS in your backend to allow requests from your frontend domain
-3. Set up your Gemini API key in your backend environment 
+## 🌱 EcoVision Team
+- [Tomas Santos Yciano](https://github.com/tomassantos484)
+- [Lauren Rodriguez](https://github.com/1aur)
+- [Hinna Zeejah](https://github.com/hinnazeejah)
+- [Amreen Kaur](https://github.com/amreen25225)

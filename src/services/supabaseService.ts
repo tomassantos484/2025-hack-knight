@@ -1,11 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL2_0 || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY2_0 || '';
-
-// Create a default anonymous client
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import secureClient, { supabase } from './supabaseClient';
 
 /**
  * Get an authenticated Supabase client using the Clerk session token
@@ -15,43 +8,43 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export const getAuthenticatedClient = (clerkToken?: string) => {
   if (!clerkToken) {
     console.log('No Clerk token provided, using anonymous client');
-    return supabase;
+    return secureClient;
   }
 
   // Create a new client with the Clerk token
-  return createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${clerkToken}`
-      }
-    }
-  });
+  // In the future, we'll pass the token to the backend API
+  return secureClient;
 };
 
 /**
  * For development purposes: Skip RLS policies by using service role key
  * WARNING: This should NEVER be used in production as it bypasses all security
  * This is only for development and testing
+ * 
+ * NOTE: If you see the warning "Using development bypass client - NEVER use this in production!"
+ * in your console, it means this function is being called. This is expected during development
+ * when testing database connections. The warning is there to remind developers not to use
+ * this function in production code. You can safely ignore this warning during development.
+ * 
+ * If you want to disable this warning, you can:
+ * 1. Comment out the database connection test in App.tsx
+ * 2. Set localStorage.setItem('hasTestedDbConnection', 'true') in your browser console
  */
 export const getDevBypassClient = () => {
-  // In a real app, you would never expose this key in client-side code
-  // This is just for development purposes
+  // Only allow this function to be used in development mode
+  if (import.meta.env.PROD) {
+    console.error('SECURITY WARNING: Attempted to use development bypass client in production!');
+    console.error('This is a security risk and has been prevented.');
+    // Return the regular secure client instead
+    return secureClient;
+  }
+  
+  // Log a warning, but only in development mode
   console.warn('Using development bypass client - NEVER use this in production!');
   
-  // For development, we'll use the anonymous client with special headers
-  return createClient(supabaseUrl, supabaseKey, {
-    db: {
-      schema: 'public',
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    },
-    global: {
-      headers: {
-        // These headers help bypass RLS in development
-        'x-client-info': 'supabase-js-bypass',
-      }
-    }
-  });
-}; 
+  // For development, we'll use the secure client with special headers
+  return secureClient;
+};
+
+// Re-export the secure client as the default
+export { secureClient as supabase }; 

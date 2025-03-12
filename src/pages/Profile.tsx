@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Trophy, Settings, Bell, Globe, ChevronRight, ExternalLink, BarChart3, Calendar, LogOut, Leaf, RefreshCw } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -193,6 +193,26 @@ const Profile = () => {
     fetchUserStats();
   }, [isSignedIn, user]);
   
+  // Check if user is eligible for a badge
+  const isEligibleForBadge = useCallback((badgeName: string, stats: typeof userStats): boolean => {
+    switch (badgeName) {
+      case 'Early Adopter':
+        return true; // Everyone is eligible for Early Adopter
+      case 'Waste Warrior':
+        return stats.actions >= 5; // Eligible after 5 actions
+      case 'Transit Champion':
+        return stats.actions >= 10; // Eligible after 10 actions
+      case 'Plant Power':
+        return stats.actions >= 15; // Eligible after 15 actions
+      case 'Eco Streak':
+        return stats.streak >= 7; // Eligible after 7-day streak
+      case 'Energy Saver':
+        return stats.co2Saved >= 50; // Eligible after saving 50kg CO2
+      default:
+        return false;
+    }
+  }, []);
+  
   // Fetch user badges
   useEffect(() => {
     const fetchUserBadges = async () => {
@@ -286,27 +306,7 @@ const Profile = () => {
     };
     
     fetchUserBadges();
-  }, [isSignedIn, user, userStats]);
-  
-  // Check if user is eligible for a badge
-  const isEligibleForBadge = (badgeName: string, stats: typeof userStats): boolean => {
-    switch (badgeName) {
-      case 'Early Adopter':
-        return true; // Everyone is eligible for Early Adopter
-      case 'Waste Warrior':
-        return stats.actions >= 5; // Eligible after 5 actions
-      case 'Transit Champion':
-        return stats.actions >= 10; // Eligible after 10 actions
-      case 'Plant Power':
-        return stats.actions >= 15; // Eligible after 15 actions
-      case 'Eco Streak':
-        return stats.streak >= 7; // Eligible after 7-day streak
-      case 'Energy Saver':
-        return stats.co2Saved >= 50; // Eligible after saving 50kg CO2
-      default:
-        return false;
-    }
-  };
+  }, [isSignedIn, user, userStats, isEligibleForBadge]);
   
   // Format the user's creation date for display
   const formatJoinDate = () => {
@@ -635,7 +635,7 @@ const Profile = () => {
     // Fetch current profile data when modal opens
     useEffect(() => {
       const fetchProfileData = async () => {
-        if (isOpen && isSignedIn && user) {
+        if (isOpen && user) {
           setIsLoading(true);
           try {
             // Get the Supabase user ID from the Clerk ID
@@ -664,7 +664,7 @@ const Profile = () => {
       };
       
       fetchProfileData();
-    }, [isOpen, isSignedIn, user]);
+    }, [isOpen, user]);
     
     if (!isOpen) return null;
     

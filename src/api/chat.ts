@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { getMockResponse } from './mockResponses';
+import { validateMockResponse } from './mockResponseValidator';
+import { API_BASE_URL } from './api-config';
 
 // Get the API key from environment variables with proper fallback
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
@@ -34,20 +36,56 @@ Important: Never claim to have capabilities you don't have, like accessing the u
 // Set to false to try using the Gemini API first
 const USE_MOCK_RESPONSES = false;
 
+/**
+ * Get a mock response with validation and logging
+ * @param message User message
+ * @returns Validated mock response
+ */
+function getValidatedMockResponse(message: string): string {
+  // Get the mock response
+  const mockResponse = getMockResponse(message);
+  
+  // Validate the mock response
+  const validationResult = validateMockResponse(message, mockResponse);
+  
+  // Log validation results in development
+  if (process.env.NODE_ENV === 'development') {
+    if (validationResult.isValid) {
+      console.log('Mock response validation passed:', validationResult.score);
+    } else {
+      console.warn('Mock response validation failed:', validationResult.reason);
+      console.warn('Query:', message);
+      console.warn('Response:', mockResponse);
+    }
+  }
+  
+  return mockResponse;
+}
+
 export async function handleChatRequest(message: string, history: { role: string; content: string }[]) {
   console.log('Chat request received:', { message, historyLength: history.length });
   
   try {
     // Check if API key is available
     if (!GEMINI_API_KEY) {
-      console.warn('Gemini API Key is missing. Using mock response instead.');
-      return { response: getMockResponse(message) };
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Gemini API Key is missing. Using mock responses for development. Ensure responses are accurate and up-to-date.');
+      } else {
+        console.error('CRITICAL: Gemini API Key is missing in production environment. Using fallback mock responses.');
+        // Log additional context to help with debugging
+        console.error('Environment check:', {
+          nodeEnv: process.env.NODE_ENV,
+          apiKeyLength: GEMINI_API_KEY ? GEMINI_API_KEY.length : 0,
+          timestamp: new Date().toISOString()
+        });
+      }
+      return { response: getValidatedMockResponse(message) };
     }
     
     // Use mock responses if flag is explicitly set to true
     if (USE_MOCK_RESPONSES) {
       console.log('Using mock response system (flag is set to true)');
-      return { response: getMockResponse(message) };
+      return { response: getValidatedMockResponse(message) };
     }
     
     // For testing - return a mock response if we're in development and having API issues
@@ -62,7 +100,7 @@ export async function handleChatRequest(message: string, history: { role: string
       // Ensure genAI is initialized
       if (!genAI) {
         console.error('Gemini API not initialized. Falling back to mock response.');
-        return { response: getMockResponse(message) };
+        return { response: getValidatedMockResponse(message) };
       }
       
       // Get the model - using the correct parameter structure
@@ -141,15 +179,32 @@ export async function handleChatRequest(message: string, history: { role: string
     } catch (apiError) {
       console.error('Error calling Gemini API:', apiError);
       
+      // Log detailed error information
+      if (apiError instanceof Error) {
+        console.error('API Error details:', {
+          name: apiError.name,
+          message: apiError.message,
+          stack: apiError.stack,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // Provide a fallback response using our mock system
       console.log('API error, falling back to mock response');
-      return { response: getMockResponse(message) };
+      return { response: getValidatedMockResponse(message) };
     }
   } catch (error) {
     console.error('Error in handleChatRequest:', error);
     
-    // Return a more specific error message
+    // Log detailed error information
     if (error instanceof Error) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+      
       return { 
         error: true, 
         response: `Error: ${error.message}. Please try again or contact support if the issue persists.` 

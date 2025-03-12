@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ActionCard from '../components/ActionCard';
 import EcoTip from '../components/EcoTip';
@@ -278,7 +278,7 @@ const Actions = () => {
   };
   
   // Fetch user actions
-  const fetchUserActions = async () => {
+  const fetchUserActions = useCallback(async () => {
     if (!isSignedIn || !user) return;
     
     try {
@@ -292,7 +292,7 @@ const Actions = () => {
     } catch (err) {
       console.error('Exception fetching user actions:', err);
     }
-  };
+  }, [isSignedIn, user]);
   
   // Load eco actions and user actions
   useEffect(() => {
@@ -319,7 +319,7 @@ const Actions = () => {
     };
     
     loadData();
-  }, [isSignedIn, user]);
+  }, [isSignedIn, user, fetchUserActions]);
   
   // Handle closing a tip
   const handleCloseTip = (tipId: number) => {

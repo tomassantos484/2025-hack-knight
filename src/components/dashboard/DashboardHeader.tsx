@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { NavItem } from '@/types/navigation';
-import DesktopNavigation from './DesktopNavigation';
-import UserMenu from './UserMenu';
+
+// Lazy load components
+const DesktopNavigation = lazy(() => import('./DesktopNavigation'));
+const UserMenu = lazy(() => import('./UserMenu'));
+
+// Simple loading fallbacks
+const NavFallback = () => <div className="h-8 w-64 bg-eco-cream/50 animate-pulse rounded"></div>;
+const UserMenuFallback = () => <div className="h-8 w-8 bg-eco-cream/50 animate-pulse rounded-full"></div>;
 
 interface DashboardHeaderProps {
   navItems: NavItem[];
@@ -10,6 +17,11 @@ interface DashboardHeaderProps {
   toggleMobileMenu: () => void;
 }
 
+/**
+ * Header component for the dashboard
+ * Contains logo, navigation, and user menu
+ * Uses lazy loading to improve initial load time
+ */
 const DashboardHeader = ({
   navItems,
   onSignOut,
@@ -29,14 +41,18 @@ const DashboardHeader = ({
         </Link>
 
         {/* Desktop Navigation */}
-        <DesktopNavigation navItems={navItems} />
+        <Suspense fallback={<NavFallback />}>
+          <DesktopNavigation navItems={navItems} />
+        </Suspense>
 
         {/* User Menu */}
-        <UserMenu 
-          onSignOut={onSignOut}
-          isMobileMenuOpen={isMobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-        />
+        <Suspense fallback={<UserMenuFallback />}>
+          <UserMenu 
+            onSignOut={onSignOut}
+            isMobileMenuOpen={isMobileMenuOpen}
+            toggleMobileMenu={toggleMobileMenu}
+          />
+        </Suspense>
       </div>
     </div>
   );

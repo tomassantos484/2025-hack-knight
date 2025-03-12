@@ -12,12 +12,36 @@
 
 # testing
 /coverage
+/jest-coverage
+/.nyc_output
+/cypress/videos/
+/cypress/screenshots/
+/cypress/fixtures/
+/cypress/downloads/
+/cypress/results/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/mochawesome-report/
+/reports/
+/test-report.xml
+/junit.xml
+*.spec.js.snap
+*.test.js.snap
+__snapshots__/
+.storybook-out
+storybook-static/
 
 # next.js
 /.next/
 /out/
 
+# Python virtual environments
 /.venv
+.venv/
+venv/
+ENV/
+env/
 
 # production
 /build
@@ -42,6 +66,40 @@ yarn-error.log*
 .env.test
 .env.production
 
+# API keys and secrets
+*.key
+*.pem
+*.cert
+*.p12
+*.pfx
+credentials.json
+service-account.json
+google-credentials.json
+supabase-credentials.json
+clerk-credentials.json
+
+# JSON files that might contain sensitive data
+*config.local.json
+*config.dev.json
+*config.development.json
+*config.prod.json
+*config.production.json
+*config.test.json
+*config.staging.json
+*secrets.json
+*credentials*.json
+*secret*.json
+*private*.json
+*auth*.json
+*token*.json
+*key*.json
+*apikey*.json
+*api-key*.json
+*test-data*.json
+*testData*.json
+*mock-data*.json
+*mockData*.json
+
 # vercel
 .vercel
 
@@ -49,41 +107,55 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# .venv
-.venv/
-
-# sql
+# Database files
 *.sql
+*.sqlite
+*.sqlite3
+*.db
 
-#pycache
+# Python cache files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.pyw
 *.pyz
+.pytest_cache/
+.coverage
+htmlcov/
 
+# Temporary files
 .vercelignore
-.txt
+*.txt
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
 
-#Railway backend
-.flask-backend/
+# Backend directories
+/flask-backend/
+/api/
 
-#api
-.api/
-
-# Local Netlify folder
+# Local deployment folders
 .netlify
 
 # Logs
 logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # IDE specific files
 .idea/
 .vscode/
-*.swp
-*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.code-workspace
 
 # OS generated files
 .DS_Store
@@ -93,3 +165,35 @@ logs
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Build artifacts
+.cache/
+.parcel-cache/
+
+# Generated files
+fix-api-url.js
+
+# Test mocks and fixtures
+__mocks__/
+__fixtures__/
+__tests__/fixtures/
+/test/fixtures/
+/mock-data/
+/fixtures/
+
+# Test configuration
+jest.config.js.snap
+karma.conf.js.snap
+.nycrc
+.mocharc
+.vitest-cache/
+*.cjs
+*.cjs.map
+*.cts
+*.cts.map
+*.mjs
+*.mjs.map
+run-tests.js
+
+test_api.html
+

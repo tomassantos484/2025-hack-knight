@@ -42,6 +42,15 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache/
+pytest-report.xml
+pytest-report.html
+pytest.xml
+.pytest_report/
+test-output/
+test-reports/
+test_results/
+.noseids
 
 # Translations
 *.mo
@@ -50,10 +59,13 @@ coverage.xml
 # Django stuff:
 *.log
 local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
 # Flask stuff:
 instance/
 .webassets-cache
+flask_session/
 
 # Scrapy stuff:
 .scrapy
@@ -84,6 +96,47 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.flaskenv
+
+# API keys and credentials
+*.key
+*.pem
+*.cert
+*.p12
+*.pfx
+credentials.json
+service-account.json
+google-credentials.json
+supabase-credentials.json
+clerk-credentials.json
+gemini-credentials.json
+*credentials*.json
+*secret*.json
+*api_key*.txt
+*api_key*.json
+*apikey*.txt
+*apikey*.json
+
+# JSON files that might contain sensitive data
+*config.local.json
+*config.dev.json
+*config.development.json
+*config.prod.json
+*config.production.json
+*config.test.json
+*config.staging.json
+*secrets.json
+*private*.json
+*auth*.json
+*token*.json
+*key*.json
+*test-data*.json
+*testData*.json
+*mock-data*.json
+*mockData*.json
+*fixture*.json
+*sample-data*.json
+*sampleData*.json
 
 # Spyder project settings
 .spyderproject
@@ -97,9 +150,62 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
 
 # IDE specific files
 .idea/
 .vscode/
 *.swp
-*.swo 
+*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test mocks and fixtures
+tests/fixtures/
+tests/data/
+tests/mocks/
+mocks/
+fixtures/
+test_data/
+mock_data/
+
+# Test configuration
+.coveragerc
+setup.cfg.test
+pytest.ini
+conftest.py.bak 
+
+vite.config.ts
+
+bun.lockb

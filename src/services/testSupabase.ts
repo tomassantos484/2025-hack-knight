@@ -7,7 +7,7 @@ import { supabase } from './supabaseClient';
 export const testSupabaseConnection = async (): Promise<{
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }> => {
   try {
     // Test 1: Basic connection
