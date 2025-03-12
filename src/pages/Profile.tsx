@@ -8,8 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ActionHistory from '../components/ActionHistory';
-import { supabase } from '../services/supabaseService';
-import { formatUuid, refreshUserStats } from '../services/ecoActionsService';
+import { supabase, formatUuid } from '../services/supabaseService';
+import { refreshUserStats } from '../services/ecoActionsService';
 import { Badge, UserBadge, getUserBadges, checkAndAwardBadges, awardBadge } from '../services/badgeService';
 import { updateUserProfile, getUserByClerkId } from '../services/userService';
 

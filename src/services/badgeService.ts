@@ -1,5 +1,5 @@
-import { supabase } from './supabaseService';
-import { formatUuid } from './ecoActionsService';
+import { supabase, formatUuid } from './supabaseService';
+//import { formatUuid } from './ecoActionsService';
 import { toast } from 'sonner';
 import { earnBuds } from './walletService';
 

@@ -177,7 +177,8 @@ const supabase = {
         console.warn('Using fallback implementation of upsert');
         // Try to use insert with onConflict option if available
         if (typeof originalFrom.insert === 'function') {
-          return originalFrom.insert(data, { ...options, onConflict: options?.onConflict || 'id' });
+          const onConflict = options?.onConflict || 'id';
+          return originalFrom.insert(data, { onConflict });
         }
         
         return {
@@ -197,6 +198,14 @@ const supabase = {
               ...updateResult,
               eq: (column, value) => {
                 console.warn('Using fallback implementation of update.eq');
+                // Try to use a direct update with a filter
+                if (typeof originalFrom.update === 'function') {
+                  return originalFrom.update(data, {
+                    ...options,
+                    returning: 'minimal',
+                    filter: { [column]: value }
+                  });
+                }
                 return {
                   data: null,
                   error: { message: 'update.eq is not implemented in fallback' }
