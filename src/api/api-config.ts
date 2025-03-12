@@ -14,6 +14,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
 // Log the API base URL in development mode for debugging
 if (import.meta.env.DEV) {
   console.log(`Using API base URL: ${API_BASE_URL} (${import.meta.env.MODE} mode)`);
+} else if (import.meta.env.PROD) {
+  console.log(`API initialized with base URL: ${API_BASE_URL}`);
 }
 
 // Export other API-related configuration as needed
