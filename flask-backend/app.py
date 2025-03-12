@@ -51,12 +51,27 @@ def test_api():
         # Handle preflight request
         return handle_preflight()
     
-    logger.info(f"Test API called from: {request.remote_addr}")
-    return jsonify({
+    # Get the request origin
+    origin = request.headers.get('Origin')
+    logger.info(f"Test API called from origin: {origin}")
+    
+    # Create the response
+    response = jsonify({
         'status': 'ok',
         'message': 'API is working',
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'origin': origin
     })
+    
+    # Add CORS headers if origin is allowed
+    if origin and origin in ALLOWED_ORIGINS:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    else:
+        logger.warning(f"Request from unauthorized origin: {origin}")
+    
+    return response
 
 @app.route('/api/process-receipt', methods=['POST', 'OPTIONS'])
 def process_receipt():
