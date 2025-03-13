@@ -2,10 +2,16 @@ import axios from 'axios';
 import { API_BASE_URL } from './api-config';
 
 // Log basic information about the API URL
-console.log('Using API base URL for trash scanner');
+console.log('Using API base URL for trash scanner:', API_BASE_URL);
 
 // Flag to enable offline mode if backend is unavailable
 let OFFLINE_MODE = false;
+
+// Ensure we're not using the old Vercel backend
+if (API_BASE_URL.includes('vercel.app')) {
+  console.error('Error: Still using Vercel backend URL. Please update your environment variables.');
+  OFFLINE_MODE = true;
+}
 
 // Define the response type
 export interface TrashScanResult {
@@ -72,6 +78,13 @@ function formatImageData(imageData: string): string {
  */
 export const testApiConnection = async (): Promise<boolean> => {
   try {
+    // Don't even try if we're using the old Vercel backend
+    if (API_BASE_URL.includes('vercel.app')) {
+      console.error('Error: Still using Vercel backend URL. Please update your environment variables.');
+      OFFLINE_MODE = true;
+      return false;
+    }
+
     console.log('Testing API connection to:', API_BASE_URL);
     
     // Add a timestamp to prevent caching
@@ -81,9 +94,7 @@ export const testApiConnection = async (): Promise<boolean> => {
     
     try {
       const response = await axios.get(url, {
-        // Add timeout to prevent hanging
         timeout: 5000,
-        // Add headers to help with CORS
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'

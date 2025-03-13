@@ -18,28 +18,30 @@ type SelectQueryBuilder = {
 };
 
 // Get Supabase credentials from environment variables with fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY || 'placeholder-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY || '';
 
 // Log warning if environment variables are missing (but not in production)
 if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_API_KEY)) {
   console.warn(
     'Supabase credentials missing in environment variables. ' +
-    'Using placeholder values for type support only. ' +
     'API calls will be routed through the backend API.'
   );
+} else if (import.meta.env.PROD) {
+  // Only log that initialization happened, not the actual URL
+  console.log('Supabase client initialized');
 }
 
 // Create a client for TypeScript type support
 // In production, this will only be used for type support, not actual API calls
 // We wrap this in a try-catch to prevent errors if the credentials are invalid
-let supabase;
+let supabaseOriginal;
 try {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  supabaseOriginal = createClient(supabaseUrl, supabaseKey);
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
   // Create a mock client that won't throw errors
-  supabase = {
+  supabaseOriginal = {
     from: () => ({
       select: () => ({
         eq: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
@@ -54,6 +56,7 @@ try {
         maybeSingle: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } })
       }),
       insert: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
+      upsert: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } }),
       update: () => ({
         eq: async () => ({ data: null, error: { message: 'Supabase client not initialized properly' } })
       }),
@@ -63,6 +66,199 @@ try {
     })
   };
 }
+
+// Create a wrapper around the Supabase client to ensure all methods are available
+const supabase = {
+  ...supabaseOriginal,
+  from: (table: string) => {
+    const originalFrom = supabaseOriginal.from(table);
+    
+    return {
+      ...originalFrom,
+      
+      // Ensure select and its methods are available
+      select: (columns: string = '*') => {
+        const originalSelect = originalFrom.select(columns);
+        
+        // Create a wrapper around the select result to ensure maybeSingle is available
+        const selectWrapper = {
+          ...originalSelect,
+          
+          // Ensure maybeSingle is always available
+          maybeSingle: async () => {
+            // If the original has maybeSingle, use it
+            if (typeof originalSelect.maybeSingle === 'function') {
+              return originalSelect.maybeSingle();
+            }
+            
+            // Otherwise, implement it using limit and single
+            console.warn('Using fallback implementation of maybeSingle');
+            try {
+              const result = await originalSelect.limit(1).single();
+              return result;
+            } catch (error) {
+              // If single throws because no rows were found, return null data
+              if (error.message && error.message.includes('No rows found')) {
+                return { data: null, error: null };
+              }
+              // Otherwise, propagate the error
+              throw error;
+            }
+          }
+        };
+        
+        // Add methods that return the wrapper
+        const methodsToWrap = ['eq', 'neq', 'in', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'not'];
+        methodsToWrap.forEach(method => {
+          if (typeof originalSelect[method] === 'function') {
+            selectWrapper[method] = (...args) => {
+              const result = originalSelect[method](...args);
+              // Add maybeSingle to the result if it doesn't have it
+              if (result && typeof result.maybeSingle !== 'function') {
+                result.maybeSingle = selectWrapper.maybeSingle;
+              }
+              return result;
+            };
+          }
+        });
+        
+        // Add methods that return a new wrapper
+        const chainableMethods = ['limit', 'order', 'range'];
+        chainableMethods.forEach(method => {
+          if (typeof originalSelect[method] === 'function') {
+            selectWrapper[method] = (...args) => {
+              const result = originalSelect[method](...args);
+              // Create a new wrapper with the result
+              return {
+                ...result,
+                maybeSingle: selectWrapper.maybeSingle,
+                // Recursively wrap methods that return a new builder
+                ...methodsToWrap.reduce((acc, m) => {
+                  if (typeof result[m] === 'function') {
+                    acc[m] = (...mArgs) => {
+                      const mResult = result[m](...mArgs);
+                      if (mResult && typeof mResult.maybeSingle !== 'function') {
+                        mResult.maybeSingle = selectWrapper.maybeSingle;
+                      }
+                      return mResult;
+                    };
+                  }
+                  return acc;
+                }, {})
+              };
+            };
+          }
+        });
+        
+        return selectWrapper;
+      },
+      
+      // Ensure insert is available
+      insert: (data, options) => {
+        if (typeof originalFrom.insert === 'function') {
+          return originalFrom.insert(data, options);
+        }
+        
+        console.warn('Using fallback implementation of insert');
+        return {
+          select: (columns) => ({
+            data: null,
+            error: { message: 'insert.select is not implemented in fallback' }
+          })
+        };
+      },
+      
+      // Ensure upsert is available
+      upsert: (data, options) => {
+        if (typeof originalFrom.upsert === 'function') {
+          return originalFrom.upsert(data, options);
+        }
+        
+        console.warn('Using fallback implementation of upsert');
+        // Try to use insert with onConflict option if available
+        if (typeof originalFrom.insert === 'function') {
+          const onConflict = options?.onConflict || 'id';
+          return originalFrom.insert(data, { onConflict });
+        }
+        
+        return {
+          data: null,
+          error: { message: 'upsert is not implemented in fallback' }
+        };
+      },
+      
+      // Ensure update is available
+      update: (data, options) => {
+        if (typeof originalFrom.update === 'function') {
+          const updateResult = originalFrom.update(data, options);
+          
+          // Add eq method if it doesn't exist
+          if (updateResult && typeof updateResult.eq !== 'function') {
+            return {
+              ...updateResult,
+              eq: (column, value) => {
+                console.warn('Using fallback implementation of update.eq');
+                // Try to use a direct update with a filter
+                if (typeof originalFrom.update === 'function') {
+                  return originalFrom.update(data, {
+                    ...options,
+                    returning: 'minimal',
+                    filter: { [column]: value }
+                  });
+                }
+                return {
+                  data: null,
+                  error: { message: 'update.eq is not implemented in fallback' }
+                };
+              }
+            };
+          }
+          
+          return updateResult;
+        }
+        
+        console.warn('Using fallback implementation of update');
+        return {
+          eq: (column, value) => ({
+            data: null,
+            error: { message: 'update is not implemented in fallback' }
+          })
+        };
+      },
+      
+      // Ensure delete is available
+      delete: (options) => {
+        if (typeof originalFrom.delete === 'function') {
+          const deleteResult = originalFrom.delete(options);
+          
+          // Add eq method if it doesn't exist
+          if (deleteResult && typeof deleteResult.eq !== 'function') {
+            return {
+              ...deleteResult,
+              eq: (column, value) => {
+                console.warn('Using fallback implementation of delete.eq');
+                return {
+                  data: null,
+                  error: { message: 'delete.eq is not implemented in fallback' }
+                };
+              }
+            };
+          }
+          
+          return deleteResult;
+        }
+        
+        console.warn('Using fallback implementation of delete');
+        return {
+          eq: (column, value) => ({
+            data: null,
+            error: { message: 'delete is not implemented in fallback' }
+          })
+        };
+      }
+    };
+  }
+};
 
 // Export the client
 export { supabase };

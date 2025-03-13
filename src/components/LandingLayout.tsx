@@ -1,7 +1,7 @@
 import React, { ReactNode, useState, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, Github, Twitter, Heart, ArrowRight, User, LogOut } from 'lucide-react';
+import { Leaf, Github, Twitter, Heart, ArrowRight, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 
@@ -11,6 +11,7 @@ interface LandingLayoutProps {
 
 const LandingLayout = ({ children }: LandingLayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isSignedIn, signOut } = useAuth();
@@ -62,6 +63,16 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
     }
   };
 
+  // Function to toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+  
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen pattern-bg flex flex-col">
       {/* Navbar - Landing page specific with section links */}
@@ -100,6 +111,15 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
             }`}
           >
             features
+          </Link>
+          <Link 
+            to="/#demo" 
+            className={`transition-colors ${
+              scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
+            }`}
+            onClick={scrollToSection('demo')}
+          >
+            see it in action
           </Link>
           <Link 
             to="/about" 
@@ -166,13 +186,99 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
         
         {/* Mobile menu button */}
         <div className="md:hidden">
-          <button className="text-eco-dark p-2 focus:outline-none">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+          <button 
+            className="text-eco-dark p-2 focus:outline-none"
+            onClick={toggleMobileMenu}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? (
+              <X size={24} />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
         </div>
       </nav>
+      
+      {/* Mobile Menu */}
+      <motion.div 
+        className={`fixed inset-0 bg-white z-40 flex flex-col pt-20 px-6 md:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: mobileMenuOpen ? 1 : 0, y: mobileMenuOpen ? 0 : -20 }}
+        transition={{ duration: 0.2 }}
+      >
+        <div className="flex flex-col space-y-6 py-8">
+          <Link 
+            to="/" 
+            className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            home
+          </Link>
+          <Link 
+            to="/how-it-works" 
+            className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            how it works
+          </Link>
+          <Link 
+            to="/features" 
+            className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            features
+          </Link>
+          <Link 
+            to="/#demo" 
+            className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+            onClick={(e) => {
+              scrollToSection('demo')(e);
+              setMobileMenuOpen(false);
+            }}
+          >
+            see it in action
+          </Link>
+          <Link 
+            to="/about" 
+            className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            about us
+          </Link>
+          
+          {isSignedIn ? (
+            <div className="flex flex-col space-y-4 pt-4 border-t border-gray-100">
+              <Link 
+                to="/profile" 
+                className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                profile
+              </Link>
+              <button
+                className="text-xl font-medium text-eco-dark hover:text-eco-green transition-colors text-left"
+                onClick={() => {
+                  handleSignOut();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                sign out
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/sign-in"
+              className="mt-4 bg-eco-green text-white px-5 py-3 rounded-md flex items-center justify-center"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              sign in
+            </Link>
+          )}
+        </div>
+      </motion.div>
       
       {/* No padding needed since we're using min-h-screen for the hero */}
       
@@ -283,6 +389,11 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                 <li>
                   <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     features
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/#demo" className="text-sm text-gray-600 hover:text-eco-green transition-colors" onClick={scrollToSection('demo')}>
+                    see it in action
                   </Link>
                 </li>
                 <li>

@@ -320,8 +320,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Track Your Impact Section - Commented Out
-      <section className="py-24 bg-white w-full">
+      {/* Demo Section - See ecovision in action */}
+      <section id="demo" className="py-24 bg-white w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -330,117 +330,51 @@ const Index = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-medium text-eco-dark mb-4">track your impact</h2>
+            <h2 className="text-4xl font-medium text-eco-dark mb-4">see ecovision in action</h2>
             <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto">
-              our intuitive tools help you monitor and improve your environmental footprint
+              watch how our platform helps users track their sustainability journey and make a positive impact
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1, duration: 0.6 }}
-                className="flex items-start gap-6 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
-              >
-                <div className="shrink-0">
-                  <Calendar size={28} className="text-eco-green" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-eco-dark mb-2">log eco actions</h3>
-                  <p className="text-eco-dark/80">
-                    Record your daily sustainable activities like using public transit or reusable bottles.
-                  </p>
-                </div>
-              </motion.div>
-
-              
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-                className="flex items-start gap-6 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
-              >
-                <div className="shrink-0">
-                  <Camera size={28} className="text-eco-green" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-eco-dark mb-2">trash scanner</h3>
-                  <p className="text-eco-dark/80">
-                    Upload photos of waste items and learn how to properly dispose of them.
-                  </p>
-                </div>
-              </motion.div>
-
-              
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="flex items-start gap-6 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
-              >
-                <div className="shrink-0">
-                  <PieChart size={28} className="text-eco-green" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-eco-dark mb-2">visual analytics</h3>
-                  <p className="text-eco-dark/80">
-                    Track your environmental impact with beautiful charts and statistics.
-                  </p>
-                </div>
-              </motion.div>
-
-              
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="flex items-start gap-6 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
-              >
-                <div className="shrink-0">
-                  <TreePine size={28} className="text-eco-green" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-eco-dark mb-2">eco challenges</h3>
-                  <p className="text-eco-dark/80">
-                    Take on personalized sustainability challenges to improve your habits.
-                  </p>
-                </div>
-              </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-lg"
+          >
+            <div className="aspect-w-16 aspect-h-9">
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                title="EcoVision Demo Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
             </div>
+          </motion.div>
 
-            
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="flex items-center justify-center"
-            >
-              <div className="relative w-full h-full max-w-md">
-                <img 
-                  src="https://images.unsplash.com/photo-1592859600972-1b0834d83747?q=80&w=2070" 
-                  alt="Environmental Impact Tracking" 
-                  className="rounded-xl shadow-lg object-cover w-full h-auto aspect-[3/4]" 
-                />
-                <div className="absolute -bottom-4 -right-4 bg-white p-4 rounded-lg shadow-md border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-eco-green"></div>
-                    <span className="text-sm font-medium">25% reduced carbon footprint</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="flex justify-center mt-12"
+          >
+            <Link to="/sign-up">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-eco-green text-white px-6 py-3 rounded-full flex items-center"
+              >
+                <span>try it yourself</span>
+                <ArrowRight size={16} className="ml-2" />
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
       </section>
-      */}
 
       {/* About Us Section */}
       <section 

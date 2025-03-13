@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { Wallet, Leaf, Gift, TreePine, Waves, ShoppingBag, CreditCard, ArrowRight, Plus, History, Camera, Receipt, Award } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
-import { supabase } from '../services/supabaseClient';
-import { formatUuid } from '../services/ecoActionsService';
+import { supabase, formatUuid } from '../services/supabaseService';
 import { earnBuds, spendBuds, getTransactions } from '../services/walletService';
+//import { format } from 'date-fns';
 
 // Interface for redemption items
 interface RedemptionItem {

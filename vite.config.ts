@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
           // Import the service worker code
           const serviceWorkerCode = `
             // Service worker built by Vite
-            importScripts('/assets/serviceWorker.js');
+            self.importScripts('/assets/serviceWorker.js');
           `;
           
           // Write the service worker to the dist folder

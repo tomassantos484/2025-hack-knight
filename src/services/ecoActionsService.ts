@@ -1,4 +1,4 @@
-import { supabase } from '../services/supabaseClient';
+import { supabase, formatUuid } from './supabaseService';
 import { EcoAction, UserAction } from '@/types/database';
 import { v4 as uuidv4 } from 'uuid';
 import { analyzeEcoAction } from './geminiService';
@@ -19,23 +19,6 @@ const handleSupabaseError = (error: unknown): { error: string } => {
   console.error('Supabase error:', error);
   return { error: error instanceof Error ? error.message : 'An unknown error occurred' };
 };
-
-// Helper function to properly format UUIDs
-export function formatUuid(uuid: string): string {
-  // Check if the UUID is already properly formatted
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
-    return uuid;
-  }
-  
-  // Remove any non-alphanumeric characters
-  const cleaned = uuid.replace(/[^a-f0-9]/gi, '');
-  
-  // Ensure we have enough characters (pad if necessary)
-  const padded = (cleaned + '0'.repeat(32)).slice(0, 32);
-  
-  // Format as UUID
-  return `${padded.slice(0, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}-${padded.slice(16, 20)}-${padded.slice(20, 32)}`;
-}
 
 /**
  * Fetch all eco actions

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getUserActions, formatUuid } from '@/services/ecoActionsService';
+import { getUserActions } from '@/services/ecoActionsService';
+import { formatUuid } from '@/services/supabaseService';
 import { UserAction, EcoAction } from '@/types/database';
 import { format } from 'date-fns';
 import { Leaf, Calendar, Clock, FileText, AlertCircle, BarChart, Droplet } from 'lucide-react';

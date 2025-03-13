@@ -1,9 +1,10 @@
 import Tesseract from 'tesseract.js';
 import axios from 'axios';
 import { getAuthenticatedClient, getDevBypassClient } from './supabaseService';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from './supabaseService';
 import { EcoAction, UserAction } from '@/types/database';
 import { getUserByClerkId } from './userService';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Upload receipt image to Supabase storage

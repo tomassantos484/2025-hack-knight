@@ -13,7 +13,7 @@ import {
   getReceiptItems,
   ReceiptItem as DbReceiptItem
 } from '../services/receiptProcessingService';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '../services/supabaseService';
 import { generateValidUuid } from '../services/receiptProcessingService';
 
 // Add this type for the Clerk user with getToken method
