@@ -76,6 +76,9 @@ const Layout = ({ children }: LayoutProps) => {
           <Link to="/features" className="text-gray-800 hover:text-eco-green transition-colors">
             features
           </Link>
+          <Link to="/#demo" className="text-gray-800 hover:text-eco-green transition-colors">
+            see ecovision in action
+          </Link>
           <Link to="/about" className="text-gray-800 hover:text-eco-green transition-colors">
             about us
           </Link>
@@ -169,6 +172,11 @@ const Layout = ({ children }: LayoutProps) => {
                 <li>
                   <Link to="/features" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     features
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/#demo" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    see ecovision in action
                   </Link>
                 </li>
                 <li>

@@ -21,6 +21,12 @@
 - Receive educational tips on proper waste disposal
 - Earn Buds rewards for recycling correctly
 
+### 🤖 AI Eco-Assistant Chatbot
+- Get personalized sustainability advice through natural conversation
+- Ask questions about recycling, composting, and eco-friendly practices
+- Receive tailored recommendations for reducing your carbon footprint
+- Learn about environmental topics in an interactive, engaging way
+
 ### 💰 EcoWallet
 - Earn "Buds" (eco-currency) for sustainable actions
 - Track your transaction history
@@ -49,6 +55,7 @@
 - **State Management**: React Query
 - **UI Components**: shadcn/ui, Radix UI primitives
 - **Visualizations**: Recharts
+- **AI Services**: Google's Gemini AI for trash classification and eco-assistant chatbot
 
 ## 🚀 Getting Started
 
@@ -99,11 +106,33 @@ Track your daily sustainable actions, from using reusable containers to reducing
 ### AI Trash Scanner
 Our AI-powered waste classification system uses Google's Gemini API to analyze images of waste items and provide accurate disposal recommendations, educational tips, and Buds rewards.
 
+### AI Eco-Assistant Chatbot
+Get personalized sustainability advice through natural conversation. Ask questions about recycling, composting, and eco-friendly practices. Receive tailored recommendations for reducing your carbon footprint. Learn about environmental topics in an interactive, engaging way.
+
 ### EcoWallet
 Manage your earned Buds currency, view transaction history, and redeem rewards. The wallet provides a tangible incentive system for sustainable behavior.
 
 ### Badges & Achievements
 Earn badges for milestones like "Early Adopter," "Waste Warrior," and "Carbon Cutter" to gamify your sustainability journey.
+
+### Trash Scanner
+- AI-powered waste classification
+- Real-time feedback
+- Educational tips
+- Waste diversion tracking
+
+### AI Eco-Assistant Chatbot
+- Personalized sustainability advice
+- Interactive environmental education
+- Recycling and composting guidance
+- Carbon footprint reduction tips
+- Powered by Google's Gemini AI
+
+### Dashboard
+- Visual progress tracking
+- Carbon footprint calculator
+- Achievement badges
+- Weekly/monthly reports
 
 ## 🤝 Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -186,6 +215,13 @@ eco-action-logger-06/
 - Real-time feedback
 - Educational tips
 - Waste diversion tracking
+
+#### AI Eco-Assistant Chatbot
+- Personalized sustainability advice
+- Interactive environmental education
+- Recycling and composting guidance
+- Carbon footprint reduction tips
+- Powered by Google's Gemini AI
 
 #### Dashboard
 - Visual progress tracking

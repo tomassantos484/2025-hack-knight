@@ -341,18 +341,18 @@ const Index = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-lg"
+            className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-lg eco-shadow"
           >
-            <div className="aspect-w-16 aspect-h-9">
+            <AspectRatio ratio={16/9}>
               <iframe 
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                src="https://www.youtube.com/embed/2eeoJsYqog8" 
                 title="EcoVision Demo Video"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowFullScreen
               ></iframe>
-            </div>
+            </AspectRatio>
           </motion.div>
 
           <motion.div
@@ -445,46 +445,6 @@ const Index = () => {
             </Link>
               </div>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Demo Video Section */}
-      <section 
-        id="demo-video"
-        className="py-24 bg-eco-cream/30 w-full"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-medium text-eco-dark mb-4">see ecovision in action</h2>
-            <p className="text-lg text-eco-dark/80 max-w-2xl mx-auto">
-              watch our demo video to see how ecovision helps you track your sustainability journey
-            </p>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-lg eco-shadow"
-          >
-            <AspectRatio ratio={16/9}>
-              <iframe 
-                src="https://www.youtube.com/embed/2eeoJsYqog8" 
-                title="EcoVision Demo Video" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
-                className="w-full h-full"
-              ></iframe>
-            </AspectRatio>
           </motion.div>
         </div>
       </section>
