@@ -109,6 +109,14 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
           >
             about us
           </Link>
+          <a 
+            href="/#demo-video" 
+            className={`transition-colors ${
+              scrolled ? 'text-gray-800 hover:text-eco-green' : 'text-eco-dark font-medium hover:text-eco-green'
+            }`}
+          >
+            see ecovision in action
+          </a>
           
           {isSignedIn ? (
             <div className="flex items-center space-x-4">
@@ -281,6 +289,11 @@ const LandingLayout = ({ children }: LandingLayoutProps) => {
                   <Link to="/about" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
                     about us
                   </Link>
+                </li>
+                <li>
+                  <a href="/#demo-video" className="text-sm text-gray-600 hover:text-eco-green transition-colors">
+                    see ecovision in action
+                  </a>
                 </li>
               </ul>
             </div>

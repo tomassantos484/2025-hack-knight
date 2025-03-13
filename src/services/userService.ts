@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
-import { formatUuid } from './receiptProcessingService';
+import { formatUuid } from './supabaseService';
+import { safeLog } from '../utils/logUtils';
 
 /**
  * Interface for Clerk user data
@@ -26,6 +27,123 @@ export interface SupabaseUser {
 }
 
 /**
+ * Ensure a user exists in the Supabase users table
+ * This should be called before any operations that require a user to exist
+ */
+export const ensureUserExists = async (userId: string): Promise<boolean> => {
+  try {
+    const formattedUserId = formatUuid(userId);
+    
+    // First check if the user already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', formattedUserId)
+      .maybeSingle();
+    
+    if (checkError) {
+      safeLog.error('Error checking if user exists:', checkError);
+      return false;
+    }
+    
+    // If user already exists, return true
+    if (existingUser) {
+      return true;
+    }
+    
+    // Try to get the user's email from Clerk ID
+    let userEmail = `user_${userId.substring(0, 8)}@example.com`;
+    
+    // Check if this is a Clerk user ID and try to find their email
+    if (userId.startsWith('user_')) {
+      try {
+        // First check if we already have this user in Supabase with a different ID
+        const { data: clerkUser, error: clerkUserError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('clerk_id', userId)
+          .maybeSingle();
+        
+        if (!clerkUserError && clerkUser && clerkUser.email) {
+          userEmail = clerkUser.email;
+        }
+      } catch (e) {
+        safeLog.error('Error checking for existing Clerk user:', e);
+      }
+    }
+    
+    // Try to use upsert first (insert if not exists, update if exists)
+    try {
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          id: formattedUserId,
+          clerk_id: userId,
+          email: userEmail,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      
+      if (!upsertError) {
+        safeLog.log(`User record created/updated with ID: ${formattedUserId}`);
+        return true;
+      }
+      
+      safeLog.error('Error upserting user record:', upsertError);
+      
+      // Fall back to insert with conflict handling
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: formattedUserId,
+          clerk_id: userId,
+          email: userEmail,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        safeLog.error('Error creating user record:', insertError);
+        
+        // If the error is a conflict (user already exists), try to update instead
+        if (insertError.code === '23505' && insertError.message.includes('already exists')) {
+          safeLog.log(`User with ID ${formattedUserId} already exists, trying to update instead`);
+          
+          // Update the existing user
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              clerk_id: userId,
+              email: userEmail,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', formattedUserId);
+          
+          if (updateError) {
+            safeLog.error('Error updating existing user:', updateError);
+            return false;
+          }
+          
+          safeLog.log(`Updated existing user record with ID: ${formattedUserId}`);
+          return true;
+        }
+        
+        return false;
+      }
+    } catch (error) {
+      safeLog.error('Exception during user upsert/insert:', error);
+      return false;
+    }
+    
+    safeLog.log(`Created new user record with ID: ${formattedUserId}`);
+    return true;
+  } catch (error) {
+    safeLog.error('Exception in ensureUserExists:', error);
+    return false;
+  }
+};
+
+/**
  * Synchronize a Clerk user with Supabase
  * This function will create or update a user record in Supabase based on Clerk user data
  * 
@@ -35,11 +153,11 @@ export interface SupabaseUser {
 export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string | null> => {
   try {
     if (!clerkUser || !clerkUser.id) {
-      console.error('No Clerk user provided for synchronization');
+      safeLog.error('No Clerk user provided for synchronization');
       return null;
     }
 
-    console.log('Synchronizing Clerk user with Supabase:', clerkUser.id);
+    safeLog.log('Synchronizing Clerk user with Supabase:', clerkUser.id);
     
     // Get the primary email address from Clerk
     const primaryEmail = clerkUser.emailAddresses && clerkUser.emailAddresses.length > 0
@@ -56,41 +174,51 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
     
     // Try to check if a user with this Clerk ID already exists
     try {
-      const { data: existingUserByClerkId, error: clerkIdCheckError } = await supabase
+      const { data: existingUsersByClerkId, error: clerkIdCheckError } = await supabase
         .from('users')
         .select('id, email, clerk_id')
-        .eq('clerk_id', clerkUser.id)
-        .maybeSingle();
+        .eq('clerk_id', clerkUser.id);
       
       if (clerkIdCheckError) {
         // If the error is about the column not existing, we'll skip this check
         if (clerkIdCheckError.message && !clerkIdCheckError.message.includes('column "clerk_id" does not exist')) {
-          console.error('Error checking if user exists by Clerk ID:', clerkIdCheckError);
+          safeLog.error('Error checking if user exists by Clerk ID:', clerkIdCheckError);
         }
-      } else if (existingUserByClerkId) {
-        // If the user exists by Clerk ID, return their Supabase ID
-        console.log('User exists in Supabase with Clerk ID:', clerkUser.id);
-        return existingUserByClerkId.id;
+      } else if (existingUsersByClerkId && existingUsersByClerkId.length > 0) {
+        // If the user exists by Clerk ID, return the first one's Supabase ID
+        safeLog.log('User exists in Supabase with Clerk ID:', clerkUser.id);
+        
+        // If there are multiple users with the same Clerk ID, log a warning
+        if (existingUsersByClerkId.length > 1) {
+          safeLog.warn(`Found ${existingUsersByClerkId.length} users with the same Clerk ID: ${clerkUser.id}. Using the first one.`);
+        }
+        
+        return existingUsersByClerkId[0].id;
       }
     } catch (clerkIdError) {
-      console.error('Error checking user by Clerk ID:', clerkIdError);
+      safeLog.error('Error checking user by Clerk ID:', clerkIdError);
       // Continue to the next check
     }
     
     // Check if a user with this email already exists
-    const { data: existingUserByEmail, error: emailCheckError } = await supabase
+    const { data: existingUsersByEmail, error: emailCheckError } = await supabase
       .from('users')
       .select('id, email')
-      .eq('email', primaryEmail)
-      .maybeSingle();
+      .eq('email', primaryEmail);
     
-    if (emailCheckError && emailCheckError.code !== 'PGRST116') {
-      console.error('Error checking if user exists by email:', emailCheckError);
+    if (emailCheckError) {
+      safeLog.error('Error checking if user exists by email:', emailCheckError);
     }
     
     // If the user exists by email, try to update their record with the Clerk ID
-    if (existingUserByEmail) {
-      console.log('User exists in Supabase by email:', existingUserByEmail.id);
+    if (existingUsersByEmail && existingUsersByEmail.length > 0) {
+      // If there are multiple users with the same email, log a warning
+      if (existingUsersByEmail.length > 1) {
+        safeLog.warn(`Found ${existingUsersByEmail.length} users with the same email: ${primaryEmail}. Using the first one.`);
+      }
+      
+      const existingUserByEmail = existingUsersByEmail[0];
+      safeLog.log('User exists in Supabase by email:', existingUserByEmail.id);
       
       try {
         // Try to update the user with the Clerk ID
@@ -110,7 +238,7 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
           }
         } catch (e) {
           // If there's an error, we'll assume the column doesn't exist
-          console.error('Error testing clerk_id column:', e);
+          safeLog.error('Error testing clerk_id column:', e);
         }
         
         // Try to update display_name and avatar_url if they exist
@@ -124,7 +252,7 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
             updateData.display_name = displayName;
           }
         } catch (e) {
-          console.error('Error testing display_name column:', e);
+          safeLog.error('Error testing display_name column:', e);
         }
         
         try {
@@ -137,7 +265,7 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
             updateData.avatar_url = clerkUser.imageUrl;
           }
         } catch (e) {
-          console.error('Error testing avatar_url column:', e);
+          safeLog.error('Error testing avatar_url column:', e);
         }
         
         const { error: updateError } = await supabase
@@ -146,83 +274,34 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
           .eq('id', existingUserByEmail.id);
         
         if (updateError) {
-          console.error('Error updating user:', updateError);
+          safeLog.error('Error updating user:', updateError);
         } else {
-          console.log('User updated with Clerk data:', existingUserByEmail.id);
+          safeLog.log('User updated with Clerk data:', existingUserByEmail.id);
         }
       } catch (updateError) {
-        console.error('Error updating user:', updateError);
+        safeLog.error('Error updating user:', updateError);
       }
       
       return existingUserByEmail.id;
     }
     
     // If no user exists, create a new one
-    console.log('Creating new user in Supabase for Clerk user:', clerkUser.id);
+    safeLog.log('Creating new user in Supabase for Clerk user:', clerkUser.id);
     
     // Generate a UUID for the new user
     const supabaseUserId = formatUuid(clerkUser.id);
     
-    // Create the new user object with basic fields
-    const newUser: Record<string, string> = {
-      id: supabaseUserId,
-      email: primaryEmail,
-      created_at: new Date().toISOString()
-    };
-    
-    // Add optional fields if the columns exist
-    try {
-      const { error: testClerkIdError } = await supabase
-        .from('users')
-        .select('clerk_id')
-        .limit(1);
-      
-      if (!testClerkIdError || !testClerkIdError.message || !testClerkIdError.message.includes('column "clerk_id" does not exist')) {
-        newUser.clerk_id = clerkUser.id;
-      }
-    } catch (e) {
-      console.error('Error testing clerk_id column:', e);
-    }
-    
-    try {
-      const { error: testDisplayNameError } = await supabase
-        .from('users')
-        .select('display_name')
-        .limit(1);
-      
-      if (!testDisplayNameError || !testDisplayNameError.message || !testDisplayNameError.message.includes('column "display_name" does not exist')) {
-        newUser.display_name = displayName;
-      }
-    } catch (e) {
-      console.error('Error testing display_name column:', e);
-    }
-    
-    try {
-      const { error: testAvatarUrlError } = await supabase
-        .from('users')
-        .select('avatar_url')
-        .limit(1);
-      
-      if (!testAvatarUrlError || !testAvatarUrlError.message || !testAvatarUrlError.message.includes('column "avatar_url" does not exist')) {
-        newUser.avatar_url = clerkUser.imageUrl;
-      }
-    } catch (e) {
-      console.error('Error testing avatar_url column:', e);
-    }
-    
-    const { error: createError } = await supabase
-      .from('users')
-      .insert(newUser);
-    
-    if (createError) {
-      console.error('Error creating user in Supabase:', createError);
+    // Ensure the user exists in the database
+    const userExists = await ensureUserExists(clerkUser.id);
+    if (!userExists) {
+      safeLog.error('Failed to ensure user exists in database');
       return null;
     }
     
-    console.log('User created in Supabase with ID:', supabaseUserId);
+    safeLog.log('User created/updated in Supabase with ID:', supabaseUserId);
     return supabaseUserId;
   } catch (error) {
-    console.error('Error in syncUserWithSupabase:', error);
+    safeLog.error('Error in syncUserWithSupabase:', error);
     return null;
   }
 };
@@ -235,7 +314,7 @@ export const syncUserWithSupabase = async (clerkUser: ClerkUser): Promise<string
  */
 export const getUserByClerkId = async (clerkId: string): Promise<string | null> => {
   if (!clerkId) {
-    console.error('No Clerk ID provided');
+    safeLog.error('No Clerk ID provided');
     return null;
   }
 
@@ -245,30 +324,34 @@ export const getUserByClerkId = async (clerkId: string): Promise<string | null> 
       const { data, error } = await supabase
         .from('users')
         .select('id')
-        .eq('clerk_id', clerkId)
-        .maybeSingle();
+        .eq('clerk_id', clerkId);
       
       if (error) {
         // If the error is about the column not existing, we'll handle it gracefully
         if (error.message && error.message.includes('column "clerk_id" does not exist')) {
-          console.warn('clerk_id column does not exist in users table. Please run the SQL script to add it.');
+          safeLog.warn('clerk_id column does not exist in users table. Please run the SQL script to add it.');
           return null;
         }
         
-        console.error('Error getting user by Clerk ID:', error);
+        safeLog.error('Error getting user by Clerk ID:', error);
         return null;
       }
       
-      if (data) {
-        return data.id;
+      if (data && data.length > 0) {
+        // If there are multiple users with the same Clerk ID, log a warning
+        if (data.length > 1) {
+          safeLog.warn(`Found ${data.length} users with the same Clerk ID: ${clerkId}. Using the first one.`);
+        }
+        
+        return data[0].id;
       }
     } catch (e) {
-      console.error('Error querying user by Clerk ID:', e);
+      safeLog.error('Error querying user by Clerk ID:', e);
     }
     
     return null;
   } catch (error) {
-    console.error('Error in getUserByClerkId:', error);
+    safeLog.error('Error in getUserByClerkId:', error);
     return null;
   }
 };
@@ -281,7 +364,7 @@ export const getUserByClerkId = async (clerkId: string): Promise<string | null> 
  */
 export const getUserByEmail = async (email: string): Promise<string | null> => {
   if (!email) {
-    console.error('No email provided');
+    safeLog.error('No email provided');
     return null;
   }
 
@@ -289,21 +372,25 @@ export const getUserByEmail = async (email: string): Promise<string | null> => {
     const { data, error } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email)
-      .maybeSingle();
+      .eq('email', email);
     
     if (error) {
-      console.error('Error getting user by email:', error);
+      safeLog.error('Error getting user by email:', error);
       return null;
     }
     
-    if (data) {
-      return data.id;
+    if (data && data.length > 0) {
+      // If there are multiple users with the same email, log a warning
+      if (data.length > 1) {
+        safeLog.warn(`Found ${data.length} users with the same email: ${email}. Using the first one.`);
+      }
+      
+      return data[0].id;
     }
     
     return null;
   } catch (error) {
-    console.error('Error in getUserByEmail:', error);
+    safeLog.error('Error in getUserByEmail:', error);
     return null;
   }
 };
@@ -326,24 +413,24 @@ const ensureUserTableHasClerkIdColumn = async (): Promise<void> => {
     if (error) {
       // If the error is about the column not existing, we need to add it
       if (error.message && error.message.includes('column "clerk_id" does not exist')) {
-        console.log('clerk_id column does not exist in users table');
+        safeLog.log('clerk_id column does not exist in users table');
         
         // We can't alter the table directly from the client
         // We need to run the SQL script manually or use a custom RPC function
-        console.log('Please run the following SQL in the Supabase SQL editor:');
-        console.log('ALTER TABLE users ADD COLUMN IF NOT EXISTS clerk_id TEXT;');
-        console.log('CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);');
+        safeLog.log('Please run the following SQL in the Supabase SQL editor:');
+        safeLog.log('ALTER TABLE users ADD COLUMN IF NOT EXISTS clerk_id TEXT;');
+        safeLog.log('CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);');
         
         // For now, we'll assume the column doesn't exist and continue
         return;
       } else {
-        console.error('Error checking if clerk_id column exists:', error);
+        safeLog.error('Error checking if clerk_id column exists:', error);
         return;
       }
     }
     
     // If we got here, the column exists
-    console.log('clerk_id column exists in users table');
+    safeLog.log('clerk_id column exists in users table');
     
     // Now let's check if we need to add other columns
     const columnsToCheck = ['display_name', 'avatar_url', 'updated_at'];
@@ -360,24 +447,24 @@ const ensureUserTableHasClerkIdColumn = async (): Promise<void> => {
           missingColumns.push(column);
         }
       } catch (e) {
-        console.error(`Error checking if ${column} column exists:`, e);
+        safeLog.error(`Error checking if ${column} column exists:`, e);
       }
     }
     
     if (missingColumns.length > 0) {
-      console.log(`Missing columns in users table: ${missingColumns.join(', ')}`);
-      console.log('Please run the following SQL in the Supabase SQL editor:');
+      safeLog.log(`Missing columns in users table: ${missingColumns.join(', ')}`);
+      safeLog.log('Please run the following SQL in the Supabase SQL editor:');
       
       for (const column of missingColumns) {
         if (column === 'updated_at') {
-          console.log(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${column} TIMESTAMP WITH TIME ZONE;`);
+          safeLog.log(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${column} TIMESTAMP WITH TIME ZONE;`);
         } else {
-          console.log(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${column} TEXT;`);
+          safeLog.log(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${column} TEXT;`);
         }
       }
     }
   } catch (error) {
-    console.error('Error in ensureUserTableHasClerkIdColumn:', error);
+    safeLog.error('Error in ensureUserTableHasClerkIdColumn:', error);
   }
 };
 
@@ -394,11 +481,11 @@ export const updateUserProfile = async (
 ): Promise<boolean> => {
   try {
     if (!userId) {
-      console.error('No user ID provided for profile update');
+      safeLog.error('No user ID provided for profile update');
       return false;
     }
 
-    console.log('Updating user profile in Supabase:', userId);
+    safeLog.log('Updating user profile in Supabase:', userId);
     
     // Prepare update data
     const updateData: Record<string, string> = {
@@ -430,14 +517,14 @@ export const updateUserProfile = async (
           if (!alterTableError) {
             updateData.bio = profileData.bio || '';
           } else {
-            console.error('Could not add bio column:', alterTableError);
+            safeLog.error('Could not add bio column:', alterTableError);
           }
         } catch (e) {
-          console.error('Error adding bio column:', e);
+          safeLog.error('Error adding bio column:', e);
         }
       }
     } catch (e) {
-      console.error('Error testing bio column:', e);
+      safeLog.error('Error testing bio column:', e);
     }
     
     // Update the user record
@@ -447,14 +534,14 @@ export const updateUserProfile = async (
       .eq('id', userId);
     
     if (updateError) {
-      console.error('Error updating user profile:', updateError);
+      safeLog.error('Error updating user profile:', updateError);
       return false;
     }
     
-    console.log('User profile updated successfully:', userId);
+    safeLog.log('User profile updated successfully:', userId);
     return true;
   } catch (error) {
-    console.error('Error in updateUserProfile:', error);
+    safeLog.error('Error in updateUserProfile:', error);
     return false;
   }
 }; 

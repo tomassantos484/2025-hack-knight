@@ -3,6 +3,16 @@ import App from './App.tsx'
 import './index.css'
 import * as serviceWorker from './serviceWorker';
 import { checkAllRequiredEnv } from './utils/envCheck';
+import { enableVerboseLogging } from './utils/logUtils';
+
+// Configure logging based on environment
+if (import.meta.env.DEV) {
+  // Enable verbose logging in development
+  enableVerboseLogging(true);
+} else {
+  // Disable verbose logging in production
+  enableVerboseLogging(false);
+}
 
 // Check environment variables in development mode
 // This is done asynchronously to not block rendering

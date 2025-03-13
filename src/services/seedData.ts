@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { Category, EcoAction } from '@/types/database';
+import { Badge } from './badgeService';
 
 /**
  * Seed categories if they don't exist
@@ -119,10 +120,96 @@ export const seedEcoActions = async (): Promise<void> => {
 };
 
 /**
+ * Seed badges if they don't exist
+ */
+export const seedBadges = async (): Promise<void> => {
+  const badges: Partial<Badge>[] = [
+    { 
+      name: 'Early Adopter', 
+      description: 'Joined during the platform\'s early days', 
+      icon: 'award', 
+      category: 'general',
+      buds_reward: 100,
+      requirements: '{}'
+    },
+    { 
+      name: 'Waste Warrior', 
+      description: 'Completed 50+ waste reduction actions', 
+      icon: 'trash-2', 
+      category: 'waste',
+      buds_reward: 200,
+      requirements: '{"actions":50,"category":"waste"}'
+    },
+    { 
+      name: 'Transit Champion', 
+      description: 'Completed 10+ sustainable transportation actions', 
+      icon: 'bus', 
+      category: 'transportation',
+      buds_reward: 150,
+      requirements: '{"actions":10,"category":"transportation"}'
+    },
+    { 
+      name: 'Plant Power', 
+      description: 'Enjoyed 15+ meatless meals', 
+      icon: 'leaf', 
+      category: 'food',
+      buds_reward: 150,
+      requirements: '{"actions":15,"title":"Ate a meatless meal"}'
+    },
+    { 
+      name: 'Eco Streak', 
+      description: 'Completed eco actions for 7 consecutive days', 
+      icon: 'calendar', 
+      category: 'general',
+      buds_reward: 250,
+      requirements: '{"streak":7}'
+    },
+    { 
+      name: 'Energy Saver', 
+      description: 'Completed energy-saving actions on 30+ different days', 
+      icon: 'zap', 
+      category: 'energy',
+      buds_reward: 300,
+      requirements: '{"uniqueDays":30,"category":"energy"}'
+    },
+    { 
+      name: 'Carbon Cutter', 
+      description: 'Saved 100+ kg of CO2 emissions', 
+      icon: 'cloud', 
+      category: 'general',
+      buds_reward: 400,
+      requirements: '{"co2Saved":100}'
+    }
+  ];
+
+  // Check if badges already exist
+  const { data: existingBadges } = await supabase
+    .from('badges')
+    .select('name');
+
+  if (existingBadges && existingBadges.length > 0) {
+    console.log('Badges already exist, skipping seed');
+    return;
+  }
+
+  // Insert badges
+  const { error } = await supabase
+    .from('badges')
+    .insert(badges);
+
+  if (error) {
+    console.error('Error seeding badges:', error);
+  } else {
+    console.log('Badges seeded successfully');
+  }
+};
+
+/**
  * Run all seed functions
  */
 export const seedDatabase = async (): Promise<void> => {
   await seedCategories();
   await seedEcoActions();
+  await seedBadges();
   console.log('Database seeding complete');
 }; 
